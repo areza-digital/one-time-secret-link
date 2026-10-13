@@ -25,7 +25,7 @@ const lt = (c: SiteConfig, who: string) => ({
   hero: {
     label: "Nemokamas atviro kodo įrankis",
     h1: "Perduokite slaptažodį.\nNepalikite jo el.\u00a0pašte.",
-    lead: "Įklijuokite slaptažodį, API raktą ar prisijungimo duomenis. Naršyklė juos užšifruoja dar prieš išsiųsdama, gavėjas nuorodą atidaro vieną kartą, o mūsų serveris turinio nemato niekada.",
+    lead: "Įklijuokite slaptažodį, API raktą ar prisijungimo duomenis. Naršyklė viską užšifruoja dar prieš išsiųsdama, gavėjas nuorodą atidaro vieną kartą, o mūsų serveris turinio niekada nemato.",
     points: ["Šifruojama jūsų naršyklėje", "Atidaroma vieną kartą, tada ištrinama", "Be registracijos, slapukų ir sekimo"],
   },
   how: {
@@ -36,7 +36,7 @@ const lt = (c: SiteConfig, who: string) => ({
       {
         icon: "key",
         title: "Užšifruojama naršyklėje",
-        text: "Jūsų naršyklė sukuria vienkartinį raktą ir juo užšifruoja tekstą. Iš įrenginio išsiunčiamas tik užšifruotas tekstas.",
+        text: "Jūsų naršyklė sukuria vienkartinį raktą ir juo užšifruoja tekstą. Iš įrenginio išsiunčiamas tik šifruotas tekstas.",
       },
       {
         icon: "server",
@@ -46,27 +46,27 @@ const lt = (c: SiteConfig, who: string) => ({
       {
         icon: "eye",
         title: "Atidaroma vieną kartą",
-        text: "Kai gavėjas atidaro nuorodą, šifruotas tekstas iškart ištrinamas. Dar savaitę ją atidarius matyti, kada tai įvyko.",
+        text: "Kai gavėjas atidaro nuorodą, šifruotas tekstas iškart ištrinamas. Dar 7 dienas nuorodoje matyti, kada ji buvo atidaryta.",
       },
     ],
     scene: {
       caption: "Nuorodos sandara",
       server: "Siunčiama serveriui",
-      serverNote: "kur saugomi duomenys",
+      serverNote: "šifruoto teksto vieta",
       browser: "Lieka naršyklėje",
       browserNote: "raktas duomenims iššifruoti",
       sees: "Serveris mato",
       seesItems: ["Šifruotą tekstą", "Kada nuoroda nustos galioti", "Ar ji jau atidaryta"],
       blind: "Serveris nemato",
-      blindItems: ["Jūsų teksto", "Rakto po # ženklo", "Kas jūs: paskyrų ir slapukų nėra"],
+      blindItems: ["Jūsų teksto", "Rakto po # ženklo", "Kas jūs: nėra paskyrų ir slapukų, IP nesaugomas"],
     },
   },
   request: {
     kicker: "Kai duomenis turi klientas",
-    h2: "Paprašykite slaptažodžio. Nelaukite jo el.\u00a0paštu.",
+    h2: "Paprašykite slaptažodžio. Gaukite jį ne el.\u00a0paštu.",
     paragraphs: [
       "Sukurkite užklausą ir nusiųskite nuorodą klientui. Jis įklijuoja duomenis, jo naršyklė juos užšifruoja jūsų raktu, o perskaityti juos galite tik jūs.",
-      "Pačią nuorodą saugu siųsti el. paštu, nes joje nėra slaptų duomenų. Klientas mato, kad duomenys pateikti, o vėliau ir tai, kad juos perskaitėte.",
+      "Pačią nuorodą saugu siųsti el.\u00a0paštu, nes joje nėra slaptų duomenų. Klientas mato, kad duomenys pateikti, o vėliau ir tai, kad juos perskaitėte.",
     ],
     scene: {
       caption: "Užklausos puslapis · iliustracinis pavyzdys",
@@ -81,7 +81,7 @@ const lt = (c: SiteConfig, who: string) => ({
   uses: {
     kicker: "Kam tai naudinga",
     h2: "Prisijungimai, kuriems ne vieta pašto dėžutėje.",
-    lead: "Laiškai lieka dėžutėse ir atsarginėse kopijose, juos persiunčia toliau. Vienkartinė nuoroda po atidarymo nebeturi turinio.",
+    lead: "Laiškai lieka dėžutėse ir atsarginėse kopijose, yra persiunčiami toliau. Atidaryta vienkartinė nuoroda turinio nebeturi.",
     cards: [
       {
         icon: "plug",
@@ -107,7 +107,7 @@ const lt = (c: SiteConfig, who: string) => ({
   },
   security: {
     kicker: "Saugumas",
-    h2: "Ką apsaugome, kaip ir ko negalime.",
+    h2: "Ką apsaugome, kaip ir ko neapsaugome.",
     items: [
       {
         icon: "key",
@@ -122,12 +122,12 @@ const lt = (c: SiteConfig, who: string) => ({
       {
         icon: "calendar",
         title: "Galiojimas",
-        text: "Nuo 1 valandos iki 7 dienų. Pasibaigus galiojimui ištrinamas ir šifruotas tekstas, ir įrašas apie nuorodą.",
+        text: "Nuo 1 valandos iki 7 dienų. Tada ištrinama viskas, išskyrus atidarymo įrašą: jis laikomas 7 dienas po atidarymo.",
       },
       {
         icon: "shield",
-        title: "Be trečiųjų šalių",
-        text: "Puslapyje nėra analitikos, reklamos, slapukų ir išorinio kodo. Šriftai ir kodas įkeliami tik iš mūsų domeno.",
+        title: "Be trečiųjų šalių kodo",
+        text: "Puslapyje nėra analitikos, reklamos, slapukų ar išorinio kodo. Šriftai ir kodas įkeliami tik iš mūsų domeno.",
       },
       {
         icon: "flag",
@@ -148,7 +148,7 @@ const lt = (c: SiteConfig, who: string) => ({
     items: [
       {
         q: "Ar galite perskaityti mano duomenis?",
-        a: "Ne. Tekstas užšifruojamas jūsų naršyklėje, o raktas lieka nuorodos dalyje po # ženklo, kurios naršyklė serveriui nesiunčia. Saugome tik šifruotą tekstą.",
+        a: "Ne. Tekstas užšifruojamas jūsų naršyklėje, o raktas lieka nuorodos dalyje po # ženklo, kurios naršyklė serveriui nesiunčia. Jūsų slaptus duomenis saugome tik šifruotus.",
       },
       {
         q: "Kas nutinka, jei niekas neatidaro nuorodos?",
@@ -156,7 +156,7 @@ const lt = (c: SiteConfig, who: string) => ({
       },
       {
         q: "Ar galima siųsti failus?",
-        a: "Kol kas ne: tik tekstą iki 10 000 simbolių. Failą siųskite šifruotą, o jo slaptažodį perduokite čia.",
+        a: "Ne: tik tekstą iki 10 000 simbolių. Failą siųskite šifruotą, o jo slaptažodį perduokite čia.",
       },
       {
         q: "Kokius duomenis apie mane saugote?",
@@ -167,12 +167,12 @@ const lt = (c: SiteConfig, who: string) => ({
         a: "Nemokamai. Tai atviro kodo projektas su MIT licencija.",
       },
       {
-        q: "Kaip patikrinti, kad svetainė veikia su paskelbtu kodu?",
-        a: `Kodas paskelbtas adresu ${c.repoUrl}. Puslapio apačioje nurodyta versija. Komanda „bun run verify ${c.origin}“ palygina šios svetainės „JavaScript“ failus su tos versijos kodu.`,
+        q: "Kaip patikrinti, ar svetainė naudoja paskelbtą kodą?",
+        a: `Kodas paskelbtas adresu ${c.repoUrl}. Puslapio apačioje nurodyta versija. Atsisiuntę tą versiją, paleiskite „bun run verify ${c.origin}“: komanda palygins šios svetainės „JavaScript“ failus su jos kodu.`,
       },
       {
         q: "Kaip pranešti apie piktnaudžiavimą?",
-        a: `Parašykite adresu ${c.contactEmail} ir pridėkite nuorodą be dalies po # ženklo. Sukčiavimui naudojamas užklausas panaikiname.`,
+        a: `Parašykite adresu ${c.contactEmail} ir pridėkite nuorodą be dalies po # ženklo. Sukčiavimui naudojamas užklausas pašaliname.`,
       },
     ],
   },
@@ -181,7 +181,7 @@ const lt = (c: SiteConfig, who: string) => ({
     source: "Šaltinio kodas",
     version: "Versija",
     report: "Pranešti apie piktnaudžiavimą",
-    reportSubject: `${c.product}: piktnaudžiavimas`,
+    reportSubject: `${c.product}: pranešimas apie piktnaudžiavimą`,
     openSource: "Atviro kodo projektas, MIT licencija",
   },
   notFound: {
@@ -223,20 +223,20 @@ const lt = (c: SiteConfig, who: string) => ({
     newOne: "Kurti naują",
     requestLabel: "Ko prašote?",
     requestPlaceholder: "Pvz., banko API raktas išrašams",
-    requestHint: "Šį tekstą matys siuntėjas. Pačių slaptų duomenų čia nerašykite.",
+    requestHint: "Šį tekstą matys siuntėjas, jis nešifruojamas. Slaptų duomenų čia nerašykite.",
     requestButton: "Sukurti užklausą",
     requestNote: "Raktas, kuriuo bus iššifruotas atsakymas, sukuriamas šiame įrenginyje ir lieka jūsų privačioje nuorodoje.",
     requestResultTitle: "Užklausa sukurta",
     shareTitle: "1. Nusiųskite šią nuorodą tam, kas turi duomenis",
-    shareText: "Ją saugu siųsti el. paštu: joje nėra slaptų duomenų.",
+    shareText: "Ją saugu siųsti el.\u00a0paštu: joje nėra slaptų duomenų.",
     ownerTitle: "2. Išsaugokite savo privačią nuorodą",
     ownerText: "Tik su ja perskaitysite atsakymą. Jei ją prarasite, atkurti negalėsime ir mes.",
-    openOwner: "Atidaryti laukimo puslapį",
+    openOwner: "Atidaryti savo užklausą",
     errEmpty: "Įrašykite, ką norite siųsti.",
     errTooLong: "Per ilgas tekstas: daugiausia {max} simbolių.",
     errLabel: "Trumpai parašykite, ko prašote (iki {max} simbolių).",
-    errLabelReserved: "Šio žodžio užklausose naudoti negalima (pvz., „patvirtinta“, PIN, bankų pavadinimai). Parašykite kitaip.",
-    errLabelSuspicious: "Užklausos tekste gali būti tik raidės, skaičiai ir įprasti skyrybos ženklai.",
+    errLabelReserved: "Užklausoje negali būti tam tikrų žodžių (pvz., „patvirtinta“, PIN, bankų pavadinimų). Parašykite kitaip.",
+    errLabelSuspicious: "Užklausos tekste gali būti tik raidės, skaitmenys ir įprasti skyrybos ženklai.",
     errRate: "Per daug bandymų. Pabandykite vėliau.",
     errNetwork: "Nepavyko susisiekti su serveriu. Patikrinkite ryšį ir bandykite dar kartą.",
     errGeneric: "Įvyko klaida. Bandykite dar kartą.",
@@ -275,7 +275,7 @@ const lt = (c: SiteConfig, who: string) => ({
     fillRevoked: "Prašytojas šią užklausą atšaukė.",
     fillConflict: "Į šią užklausą jau atsakyta {date}. Jei atsakėte ne jūs, praneškite prašytojui.",
     ownerTitle2: "Jūsų užklausa",
-    ownerWaiting: "Laukiama atsakymo. Būsena tikrinama kas 10 sekundžių.",
+    ownerWaiting: "Laukiama atsakymo. Būsena tikrinama automatiškai.",
     ownerShare: "Nuoroda siuntėjui",
     ownerRevoke: "Atšaukti užklausą",
     ownerReceived: "Atsakymas gautas {date}.",
@@ -305,14 +305,14 @@ const en = (c: SiteConfig, who: string): Copy => ({
     request: "Requests",
     security: "Security",
     faq: "FAQ",
-    theme: "Switch light or dark theme",
+    theme: "Switch between light and dark",
     language: "Language",
     home: `${c.product} home`,
   },
   hero: {
     label: "Free and open source",
     h1: "Send the password.\nKeep it out of the inbox.",
-    lead: "Paste a password, an API key or a login. Your browser encrypts it before it leaves your device, the recipient opens the link once, and our server never sees what is inside.",
+    lead: "Paste a password, an API key or login details. Your browser encrypts it before it leaves your device, the recipient opens the link once, and our server never sees what is inside.",
     points: ["Encrypted in your browser", "Opens once, then it is deleted", "No sign-up, no cookies, no tracking"],
   },
   how: {
@@ -323,34 +323,34 @@ const en = (c: SiteConfig, who: string): Copy => ({
       {
         icon: "key",
         title: "Encrypted in your browser",
-        text: "Your browser creates a one-time key and encrypts the text with it. Only ciphertext leaves your device.",
+        text: "Your browser creates a one-time key and encrypts the text with it. Only encrypted text leaves your device.",
       },
       {
         icon: "server",
-        title: "The server keeps only ciphertext",
-        text: "We receive text nobody can read and keep it no longer than you chose, 7 days at most.",
+        title: "The server keeps only encrypted text",
+        text: "We receive text we can't read and keep it only as long as you chose, 7 days at most.",
       },
       {
         icon: "eye",
         title: "Opened once",
-        text: "When the recipient opens the link, the ciphertext is deleted in the same moment. For a week afterwards, opening it shows when that happened.",
+        text: "When the recipient opens the link, the encrypted text is deleted at once. For 7 days after that, the link shows when it was opened.",
       },
     ],
     scene: {
       caption: "Anatomy of a link",
       server: "Sent to the server",
-      serverNote: "where the ciphertext is",
+      serverNote: "where the encrypted text is",
       browser: "Stays in the browser",
       browserNote: "the key that unlocks it",
       sees: "The server sees",
       seesItems: ["Encrypted text", "When the link expires", "Whether it was opened"],
       blind: "The server never sees",
-      blindItems: ["Your text", "The key after the #", "Who you are: no accounts, no cookies"],
+      blindItems: ["Your text", "The key after the #", "Who you are: no accounts or cookies, IP not stored"],
     },
   },
   request: {
     kicker: "When the client has the details",
-    h2: "Ask for the password. Don't wait for it by email.",
+    h2: "Ask for the password. Don't have it emailed.",
     paragraphs: [
       "Create a request and send the link to your client. They paste the details, their browser encrypts them with your key, and only you can read them.",
       "The link itself is safe to email, because it holds no secret. Your client sees that the details were delivered, and later that you read them.",
@@ -378,7 +378,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
       {
         icon: "database",
         title: "App logins",
-        text: "A new user's login for accounting, CRM or any other work software.",
+        text: "A new user's login for accounting, CRM or any other business software.",
       },
       {
         icon: "clipboard",
@@ -388,7 +388,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
       {
         icon: "bank",
         title: "Bank and payment keys",
-        text: "Keys for automatic statements and payment systems that have to reach a partner.",
+        text: "Keys for automated bank statements and payment systems, when a partner needs them.",
       },
     ],
   },
@@ -404,16 +404,16 @@ const en = (c: SiteConfig, who: string): Copy => ({
       {
         icon: "eye",
         title: "Read once",
-        text: "The ciphertext is handed out and deleted in a single step. There is no second read.",
+        text: "The encrypted text is handed out and deleted in a single step. There is no second read.",
       },
       {
         icon: "calendar",
         title: "Expiry",
-        text: "From 1 hour to 7 days. After that both the ciphertext and the record of the link are deleted.",
+        text: "From 1 hour to 7 days. Then everything is deleted except the opened-at record, kept 7 days after opening.",
       },
       {
         icon: "shield",
-        title: "No third parties",
+        title: "No third-party code",
         text: "No analytics, ads, cookies or outside scripts on the page. Fonts and code load only from our own domain.",
       },
       {
@@ -424,7 +424,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
       {
         icon: "stamp",
         title: "Verified requests",
-        text: "Requests from the people who run this site carry a \"Verified\" badge. Anyone can create other requests, so only send details to people you know.",
+        text: "Requests from the people who run this site carry a “Verified” badge. Anyone can create other requests, so only send details to people you know.",
       },
     ],
   },
@@ -435,27 +435,27 @@ const en = (c: SiteConfig, who: string): Copy => ({
     items: [
       {
         q: "Can you read my data?",
-        a: "No. The text is encrypted in your browser, and the key stays in the part of the link after the # sign, which browsers never send to the server. We only store ciphertext.",
+        a: "No. The text is encrypted in your browser, and the key stays in the part of the link after the # sign, which browsers never send to the server. Your secret is stored only in encrypted form.",
       },
       {
         q: "What happens if nobody opens the link?",
-        a: "When it expires the ciphertext is deleted automatically. The longest expiry is 7 days.",
+        a: "When it expires, the encrypted text is deleted automatically. A link lasts 7 days at most.",
       },
       {
         q: "Can I send files?",
-        a: "Not yet: text only, up to 10,000 characters. Send the file encrypted and pass its password here.",
+        a: "No: text only, up to 10,000 characters. Send the file encrypted and pass its password here.",
       },
       {
         q: "What do you store about me?",
-        a: "The ciphertext, when it was created and expires, and whether the link was opened. To limit abuse we count actions by a hash of your IP address that changes every day. We do not store the IP address itself. The site runs on Cloudflare's infrastructure; its technical backups are kept for up to 30 days, but they hold only ciphertext, which cannot be read without the key.",
+        a: "The encrypted text, any request text (not encrypted), and when the link was created, expires and was opened. To limit abuse we count actions by a hash of your IP address that changes every day; we do not store the address itself. The site runs on Cloudflare, which keeps technical backups for up to 30 days. They hold no keys, so the secrets in them can't be read.",
       },
       {
         q: "How much does it cost?",
-        a: "Nothing. It is an open-source project under the MIT license.",
+        a: "Nothing. It is an open-source project under the MIT License.",
       },
       {
-        q: "How can I check this site runs the published code?",
-        a: `The code is published at ${c.repoUrl}. The version is shown at the bottom of every page, and \`bun run verify ${c.origin}\` compares this site's JavaScript with the code of that version.`,
+        q: "How can I check that this site runs the published code?",
+        a: `The code is published at ${c.repoUrl}. The version is shown at the bottom of every page. In a copy of that version, run “bun run verify ${c.origin}” to compare this site's JavaScript with its code.`,
       },
       {
         q: "How do I report abuse?",
@@ -469,7 +469,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
     version: "Version",
     report: "Report abuse",
     reportSubject: `${c.product}: abuse report`,
-    openSource: "Open source, MIT license",
+    openSource: "Open source, MIT License",
   },
   notFound: {
     title: "Page not found",
@@ -478,20 +478,20 @@ const en = (c: SiteConfig, who: string): Copy => ({
   },
   appMeta: {
     open: "Someone sent you a secret",
-    fill: "You are asked for secret details",
+    fill: "Someone is asking you for a secret",
     owner: "Your request",
   },
   ui: {
     locale: "en-GB",
     tabSend: "Send a secret",
-    tabRequest: "Ask for one",
+    tabRequest: "Ask for a secret",
     secretLabel: "Secret",
-    secretPlaceholder: "For example an API key, a password or a login",
+    secretPlaceholder: "For example, an API key, password or login details",
     counter: "{n} of {max} characters",
     ttlLabel: "Link expires after",
     ttl: { "1h": "1 hour", "24h": "24 hours", "3d": "3 days", "7d": "7 days" },
     sendButton: "Encrypt and create link",
-    sendNote: "Encrypted on this device. The server only receives ciphertext.",
+    sendNote: "Encrypted on this device. The server only receives encrypted text.",
     working: "Encrypting…",
     sendResultTitle: "Your link is ready",
     sendResultText:
@@ -501,7 +501,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
     copied: "Copied",
     statusLabel: "Status:",
     statusOpen: "not opened yet",
-    statusRead: "opened {date}",
+    statusRead: "opened on {date}",
     statusRevoked: "deleted",
     statusRemoved: "removed for abuse",
     statusGone: "expired",
@@ -510,19 +510,19 @@ const en = (c: SiteConfig, who: string): Copy => ({
     newOne: "Create another",
     requestLabel: "What are you asking for?",
     requestPlaceholder: "For example: bank API key for statements",
-    requestHint: "The sender will see this text. Don't write the secret itself here.",
+    requestHint: "The sender sees this text, and it isn't encrypted. Don't put the secret here.",
     requestButton: "Create request",
     requestNote: "The key that will decrypt the answer is created on this device and stays in your private link.",
     requestResultTitle: "Request created",
     shareTitle: "1. Send this link to whoever has the details",
     shareText: "It is safe to email: it holds no secret.",
-    ownerTitle: "2. Keep your private link",
-    ownerText: "You need it to read the answer. If you lose it, nobody can recover it, us included.",
-    openOwner: "Open the waiting page",
+    ownerTitle: "2. Save your private link",
+    ownerText: "You need it to read the answer. If you lose it, nobody can recover it, not even us.",
+    openOwner: "Open your request",
     errEmpty: "Type what you want to send.",
     errTooLong: "Too long: {max} characters at most.",
     errLabel: "Say briefly what you are asking for (up to {max} characters).",
-    errLabelReserved: "That word can't be used in requests (e.g. “verified”, PIN, bank names). Please rephrase.",
+    errLabelReserved: "Requests can't contain words like “verified”, PIN or bank names. Please rephrase.",
     errLabelSuspicious: "Use only letters, numbers and ordinary punctuation in the request text.",
     errRate: "Too many attempts. Try again later.",
     errNetwork: "Could not reach the server. Check your connection and try again.",
@@ -536,7 +536,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
     home: "Back to start",
     openTitle: "Someone sent you a secret",
     openIntro:
-      "It can be shown only once. Once shown it is deleted from the server, so copy it before you close this window.",
+      "It can be shown once. After that it is deleted from the server, so copy it before you close this window.",
     reveal: "Show",
     secretOut: "Secret",
     revealed: "Deleted from the server. It will be gone if you reload this page.",
@@ -545,7 +545,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
     revokedSend: "The sender deleted this link.",
     wrongKey: "The key doesn't match this link. Check that you copied the whole link.",
     fillTitleVerified: "{name} is asking for:",
-    fillTitleAnon: "Their message:",
+    fillTitleAnon: "Message from the requester:",
     fillTitleAnonHeadline: "Someone is asking you for a secret",
     removedNotice: "This link was removed after an abuse report.",
     warnAnon:
@@ -554,17 +554,17 @@ const en = (c: SiteConfig, who: string): Copy => ({
     fillPlaceholder: "Paste the requested details",
     fillButton: "Encrypt and send",
     fillNote: "Encrypted on this device with the requester's key. Only the requester can read it.",
-    fillSent: "Sent {date}. Only the requester can read it.",
+    fillSent: "Sent on {date}. Only the requester can read it.",
     fillSentHint: "Once they read it, opening this link will show a confirmation.",
-    fillFilled: "Details delivered {date}. Waiting for the requester to read them. If that wasn't you, tell the requester.",
-    fillRead: "Details delivered {filled}; the requester read them {read}.",
+    fillFilled: "Details delivered on {date}. Waiting for the requester to read them. If you didn't send them, tell the requester.",
+    fillRead: "Delivered on {filled}; read by the requester on {read}.",
     fillRevoked: "The requester cancelled this request.",
     fillConflict: "This request was already answered on {date}. If that wasn't you, tell the requester.",
     ownerTitle2: "Your request",
-    ownerWaiting: "Waiting for the answer. This page checks every 10 seconds.",
+    ownerWaiting: "Waiting for the answer. This page checks for it automatically.",
     ownerShare: "Link for the sender",
     ownerRevoke: "Cancel request",
-    ownerReceived: "Answer received {date}.",
+    ownerReceived: "Answer received on {date}.",
     ownerReveal: "Show the answer",
     ownerRevealed: "The answer was deleted from the server. It will be gone if you reload this page.",
     ownerRead: "The answer was already read on {date}.",
