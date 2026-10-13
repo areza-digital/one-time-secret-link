@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["@types/bun"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["src/web", "src/shared", "src/worker/csp.ts", "src/worker/ip.ts", "site", "themes", "cli", "scripts", "test"]
+}

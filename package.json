@@ -1,0 +1,36 @@
+{
+  "name": "vienkartine",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "build": "bun run site/build.ts",
+    "dev": "bun run build && wrangler dev",
+    "test": "bun test",
+    "e2e": "bun run build && bun run scripts/e2e.ts",
+    "check": "bun run typecheck && bun test && bun run e2e",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "verify": "bun run scripts/verify.ts",
+    "deploy": "bun run build && bun test && wrangler deploy"
+  },
+  "dependencies": {
+    "age-encryption": "0.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261012.1",
+    "@types/bun": "^1.4.3",
+    "lucide-static": "1.55.0",
+    "typescript": "^7.0.2",
+    "wrangler": "4.149.0"
+  },
+  "license": "MIT",
+  "description": "One-time and request links for passwords and API keys, encrypted in the browser with age. Cloudflare Workers + Durable Objects.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/areza-digital/vienkartine"
+  },
+  "bin": {
+    "vienkartine": "cli/vienkartine.ts"
+  }
+}

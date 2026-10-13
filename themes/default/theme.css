@@ -1,0 +1,170 @@
+/* Default theme: neutral, system fonts, indigo accent, rounded corners. Icons: Lucide (ISC). */
+
+:root,
+.light-scope {
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --paper: #ffffff;
+  --mist: #f1f5f9;
+  --rule: #e2e8f0;
+  --muted: #94a3b8;
+  --link: #4338ca;
+  --accent: #6366f1;
+  --tint: #eef2ff;
+  --tint-alt: #ecfdf5;
+  --dot: #0f172a12;
+  --shadow: #0f172a0d;
+  --highlight: #f59e0b;
+  --highlight-soft: #fcd34d;
+  --danger: #dc2626;
+  --ok: #059669;
+  --ok-soft: #34d399;
+  --ok-bg: #d1fae5;
+  --ok-ink: #065f46;
+  --warn-bg: #fef3c7;
+  --warn-ink: #78350f;
+  --error-bg: #fee2e2;
+  --error-ink: #991b1b;
+  --cross: #f97316;
+  --dark-bg: #1e1b4b;
+  --dark-muted: #c7d2fe;
+  --dark-rule: #ffffff26;
+  --cta-bg: #4338ca;
+  --cta-ink: #ffffff;
+  --radius: 12px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  color-scheme: light;
+  --page-background: #ffffff;
+  --panel-background: #f8fafc;
+  --border-color: #e2e8f0;
+  --text-color: #0f172a;
+  --text-muted: #475569;
+  --link-color: #4338ca;
+  --button-background: #4f46e5;
+  --button-foreground: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page-background: #0b1020;
+  --panel-background: #141a2e;
+  --border-color: #263049;
+  --text-color: #e5e7eb;
+  --text-muted: #a5b4c8;
+  --link-color: #a5b4fc;
+  --button-background: #e0e7ff;
+  --button-foreground: #1e1b4b;
+}
+
+/* Softer type than the tight display setting in base.css, which suits geometric fonts. */
+.page h1 {
+  font-size: clamp(38px, 4.2vw, 64px);
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+.page h2 {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.page h3 {
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+.brand-name {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.kicker {
+  color: var(--link-color);
+  font-weight: 600;
+}
+
+.section--dark .kicker {
+  color: var(--dark-muted);
+}
+
+/* Logo and icons */
+.logo-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--button-background);
+  color: var(--button-foreground);
+}
+
+.logo-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.footer-brand .logo-mark {
+  width: 26px;
+  height: 26px;
+}
+
+.icon-badge {
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--tint);
+  color: var(--link);
+}
+
+.section--dark .icon-badge {
+  background: #ffffff1a;
+  color: var(--dark-muted);
+}
+
+.icon--24 { width: 24px; height: 24px; border-radius: 6px; }
+.icon--40 { width: 40px; height: 40px; }
+.icon--44 { width: 44px; height: 44px; }
+.icon--48 { width: 48px; height: 48px; }
+.icon--56 { width: 56px; height: 56px; }
+
+.tool-tab .icon-badge {
+  background: transparent;
+}
+
+/* Glyphs are stroke icons here, so give them square boxes. */
+.glyph-check { width: 16px; height: 16px; }
+.glyph-cross { width: 14px; height: 14px; }
+.glyph-plus { width: 18px; height: 18px; }
+.glyph-chevron { width: 16px; height: 16px; }
+.glyph-theme { width: 18px; height: 18px; }
+
+.tool,
+.app-card {
+  box-shadow: 0 10px 30px var(--shadow);
+}
+
+.cards {
+  border: 0;
+  gap: 16px;
+}
+
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+}
+
+.sees {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.step-number {
+  border-radius: 999px;
+}
+
+:root[data-theme="dark"] .hero-points .glyph-check {
+  color: var(--ok-soft);
+}

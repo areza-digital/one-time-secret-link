@@ -1,0 +1,10 @@
+# Copy to .dev.vars for `wrangler dev`, and set the same names as Worker secrets in production
+# (`wrangler secret put NAME`, or the prompt in the Deploy to Cloudflare flow).
+
+# Required: random salt for the daily IP hash used by rate limiting. Generate with: openssl rand -base64 32
+IP_SALT=
+
+# Optional: SHA-256 hex of your operator token. Requests carrying `Authorization: Bearer <token>` are shown as
+# "Verified: <VERIFIED_NAME>" and skip per-IP limits. Generate a token, keep it secret, store only its hash here:
+#   token=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=') && printf %s "$token" | shasum -a 256
+OPERATOR_TOKEN_SHA256=
