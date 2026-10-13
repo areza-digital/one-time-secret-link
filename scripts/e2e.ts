@@ -142,7 +142,7 @@ try {
   const recipientRevoke = await call(`/api/items/${linkOnly.data.id}/revoke`, { auth: await authFromIdentity(keyHolder.identity) });
   check("a link holder cannot revoke a one-time link (only its creator)", recipientRevoke.status === 403);
   const adminRevoke = cli(["revoke", String(linkOnly.data.id), "--admin"]);
-  check("operator token takes down anyone's link", adminRevoke.code === 0 && (await call(`/api/items/${linkOnly.data.id}`)).data.state === "revoked", adminRevoke.err);
+  check("operator token takes down anyone's link (state removed)", adminRevoke.code === 0 && (await call(`/api/items/${linkOnly.data.id}`)).data.state === "removed", adminRevoke.err);
 
   // 4. Browser-style anonymous send and API guards.
   const keys = await newIdentity();

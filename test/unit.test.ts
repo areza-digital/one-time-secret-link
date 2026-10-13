@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { envLine, upsertEnv } from "../cli/vienkartine";
+import { envLine, readEnvValue, upsertEnv } from "../cli/vienkartine";
 import { decryptText, encryptText, isIdentity, newIdentity } from "../src/shared/crypto";
 import {
   AUTH_PATTERN,
@@ -146,5 +146,19 @@ describe("anonymous label attacks from the 2026-10-13 pentest", () => {
     expect(check("Pinigų sistemos API raktas")).toBeNull(); // "pin" only as a whole word
     expect(check("Пароль от Wi-Fi")).toBeNull(); // Cyrillic words are fine, only mixed words are not
     expect(check("API raktas 🔑")).toBe("suspicious");
+  });
+});
+
+describe("reading env files like sh does", () => {
+  test("last definition wins, quotes are honoured, unquoted values stop at a comment", async () => {
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const dir = mkdtempSync(`${(await import("node:os")).tmpdir()}/readenv-`);
+    const file = `${dir}/x.env`;
+    writeFileSync(file, "A=first\nA=second # comment\nexport B='p #not a comment'\nC=\"q\\\"uote\"\n  D=spaced\n");
+    expect(readEnvValue(`${file}:A`)).toBe("second");
+    expect(readEnvValue(`${file}:B`)).toBe("p #not a comment");
+    expect(readEnvValue(`${file}:C`)).toBe('q"uote');
+    expect(readEnvValue(`${file}:D`)).toBe("spaced");
+    expect(() => readEnvValue(`${file}:MISSING`)).toThrow();
   });
 });

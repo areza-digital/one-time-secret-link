@@ -128,13 +128,18 @@ function readJson<T>(path: string): T {
  * the URL it belongs to (VIENKARTINE_OPERATOR_URL, stored next to it), and only ever sent there.
  */
 function operator(): { token: string; origin: string } | null {
-  let token = process.env.VIENKARTINE_OPERATOR_TOKEN || null;
-  let url = process.env.VIENKARTINE_OPERATOR_URL || null;
-  const file = join(HOME, "operator.env");
-  if ((!token || !url) && existsSync(file)) {
+  // Token and URL always come from the same place, so an environment can't pair its own URL with the file's token.
+  let token: string | null = null;
+  let url: string | null = null;
+  if (process.env.VIENKARTINE_OPERATOR_TOKEN) {
+    token = process.env.VIENKARTINE_OPERATOR_TOKEN;
+    url = process.env.VIENKARTINE_OPERATOR_URL || null;
+  } else {
+    const file = join(HOME, "operator.env");
+    if (!existsSync(file)) return null;
     const text = readFileSync(file, "utf8");
-    token ??= /^VIENKARTINE_OPERATOR_TOKEN=(\S+)$/m.exec(text)?.[1] ?? null;
-    url ??= /^VIENKARTINE_OPERATOR_URL=(\S+)$/m.exec(text)?.[1] ?? null;
+    token = /^VIENKARTINE_OPERATOR_TOKEN=(\S+)$/m.exec(text)?.[1] ?? null;
+    url = /^VIENKARTINE_OPERATOR_URL=(\S+)$/m.exec(text)?.[1] ?? null;
   }
   if (!token || !url) return null;
   try {
@@ -255,16 +260,20 @@ function saveValue(value: string, target: Target, id: string): string {
   }
 }
 
-function readEnvValue(spec: string): string {
+/** Reads NAME from an env file the way `. file` would: the last definition wins, quotes are honoured, and an
+ * unquoted value ends at a ` #` comment. */
+export function readEnvValue(spec: string): string {
   const [file, name] = spec.split(/:(?=[^:]+$)/);
   if (!file || !name || !NAME_PATTERN.test(name)) throw new CliError("--from-env takes FILE:NAME");
   const content = readFileSync(expandPath(file), "utf8");
-  const match = new RegExp(`^(?:export\\s+)?${name}=(.*)$`, "m").exec(content);
-  if (!match) throw new CliError(`${name} not found in ${file}`);
-  let value = match[1].trim();
-  if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1).replace(/\\(["\\$`])/g, "$1");
-  else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
-  return value;
+  const matches = [...content.matchAll(new RegExp(`^[ \\t]*(?:export[ \\t]+)?${name}=(.*)$`, "gm"))];
+  const raw = matches.at(-1)?.[1];
+  if (raw === undefined) throw new CliError(`${name} not found in ${file}`);
+  const single = /^'([^']*)'/.exec(raw);
+  if (single) return single[1];
+  const double = /^"((?:[^"\\]|\\.)*)"/.exec(raw);
+  if (double) return double[1].replace(/\\(["\\$`])/g, "$1");
+  return raw.replace(/\s+#.*$/, "").trim();
 }
 
 // ---------- commands ----------
@@ -505,7 +514,8 @@ async function push(args: ReturnType<typeof parseArgs>): Promise<void> {
     'if [ -d "$f" ]; then echo "$f is a directory" >&2; exit 3; fi',
     "IFS= read -r line",
     'tmp=$(mktemp "${f}.vienkartine.XXXXXX")',
-    'if [ -f "$f" ]; then cp "$f" "$f.vienkartine.bak"; chmod 600 "$f.vienkartine.bak"; grep -v -E "^(export[[:space:]]+)?${n}=" "$f" > "$tmp" || true; fi',
+    // The backup goes through a fresh temp file and mv, so a symlink planted at the backup path is replaced, not followed.
+    'if [ -f "$f" ]; then b=$(mktemp "${f}.vienkartine.XXXXXX"); cat "$f" > "$b"; mv -f "$b" "$f.vienkartine.bak"; grep -v -E "^(export[[:space:]]+)?${n}=" "$f" > "$tmp" || true; fi',
     'printf "%s\\n" "$line" >> "$tmp"',
     'if [ -f "$f" ]; then cat "$tmp" > "$f"; rm -f "$tmp"; else mv "$tmp" "$f"; fi',
   ].join("\n");

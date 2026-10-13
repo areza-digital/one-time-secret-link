@@ -6,7 +6,7 @@ import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { DEFAULT_RESERVED_WORDS, LIMITS, TTL_CHOICES, type Lang } from "../src/shared/protocol";
+import { LIMITS, TTL_CHOICES, reservedWords, type Lang } from "../src/shared/protocol";
 import { CSP } from "../src/worker/csp";
 import { coreCopy, type Copy } from "./copy";
 import { button, esc } from "./html";
@@ -550,7 +550,7 @@ export async function build(): Promise<{ out: string; assets: Assets; version: V
   const out = resolve(process.env.VK_OUT ?? join(ROOT, "dist"));
   const base = coreCopy(theme.config);
   const copy = { lt: theme.copy ? theme.copy("lt", base.lt) : base.lt, en: theme.copy ? theme.copy("en", base.en) : base.en };
-  const reserved = (vars.RESERVED_LABEL_WORDS ?? DEFAULT_RESERVED_WORDS.join(",")).split(",").map((w) => w.trim()).filter(Boolean);
+  const reserved = reservedWords(vars.RESERVED_LABEL_WORDS); // empty or missing means the defaults, as in the Worker
   const ctx: Ctx = {
     theme,
     copy,
