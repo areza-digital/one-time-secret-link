@@ -90,6 +90,10 @@
   color: var(--dark-muted);
 }
 
+.section--dark .light-scope .kicker {
+  color: var(--link);
+}
+
 /* Logo and icons */
 .logo-mark {
   display: inline-grid;
@@ -132,6 +136,11 @@
 
 .tool-tab .icon-badge {
   background: transparent;
+}
+
+.step-icon .icon-badge {
+  width: 48px;
+  height: 48px;
 }
 
 /* Glyphs are stroke icons here, so give them square boxes. */
