@@ -30,8 +30,10 @@ export interface SiteConfig {
   origin: string;
   /** Product name shown in the header, titles and social previews: one name, or one per language. */
   product: string | Record<Lang, string>;
-  /** Public source repository, linked from the footer and used by `verify`. */
+  /** Public source repository, linked from the footer and the FAQ. */
   repoUrl: string;
+  /** false: the pages neither link to repoUrl nor say the code is open source (e.g. while the repository is private). */
+  publicSource?: boolean;
   /** Where abuse reports and questions go. */
   contactEmail: string;
   /** Who runs this instance, shown in the footer ("Sukūrė …" / "Made by …"). Optional for self-hosters. */

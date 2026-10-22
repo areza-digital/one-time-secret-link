@@ -10,7 +10,7 @@ const lt = (c: SiteConfig, who: string) => ({
   meta: {
     title: `${productName(c, "lt")}: saugus slaptažodžių perdavimas`,
     description:
-      "Nemokamai perduokite slaptažodžius ir API raktus: šifruojama naršyklėje, atidaroma vieną kartą, serveris turinio nemato. Atviras kodas.",
+      `Nemokamai perduokite slaptažodžius ir API raktus: šifruojama naršyklėje, atidaroma vieną kartą, serveris turinio nemato.${c.publicSource === false ? "" : " Atviras kodas."}`,
   },
   nav: {
     skip: "Pereiti prie turinio",
@@ -23,7 +23,7 @@ const lt = (c: SiteConfig, who: string) => ({
     home: `${productName(c, "lt")}: pradžia`,
   },
   hero: {
-    label: "Nemokamas atviro kodo įrankis",
+    label: c.publicSource === false ? "Nemokamas įrankis" : "Nemokamas atviro kodo įrankis",
     h1: "Perduokite slaptažodį.\nNepalikite jo el.\u00a0pašte.",
     lead: "Įklijuokite slaptažodį, API raktą ar prisijungimo duomenis. Naršyklė viską užšifruoja dar prieš išsiųsdama, gavėjas nuorodą atidaro vieną kartą, o mūsų serveris turinio niekada nemato.",
     points: ["Šifruojama jūsų naršyklėje", "Atidaroma vieną kartą, tada ištrinama", "Be registracijos, slapukų ir sekimo"],
@@ -164,12 +164,12 @@ const lt = (c: SiteConfig, who: string) => ({
       },
       {
         q: "Kiek tai kainuoja?",
-        a: "Nemokamai. Tai atviro kodo projektas su MIT licencija.",
+        a: `Nemokamai.${c.publicSource === false ? "" : " Tai atviro kodo projektas su MIT licencija."}`,
       },
-      {
+      ...(c.publicSource === false ? [] : [{
         q: "Kaip patikrinti, ar svetainė naudoja paskelbtą kodą?",
         a: `Kodas paskelbtas adresu ${c.repoUrl}. Puslapio apačioje nurodyta versija. Atsisiuntę tą versiją, paleiskite „bun run verify ${c.origin}“: komanda palygins šios svetainės „JavaScript“ failus su jos kodu.`,
-      },
+      }]),
       {
         q: "Kaip pranešti apie piktnaudžiavimą?",
         a: `Parašykite adresu ${c.contactEmail} ir pridėkite nuorodą be dalies po # ženklo. Sukčiavimui naudojamas užklausas pašaliname.`,
@@ -297,7 +297,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
   meta: {
     title: `${productName(c, "en")}: one-time links for passwords`,
     description:
-      "Share passwords and API keys for free: encrypted in your browser, opened once, never readable by the server. Open source.",
+      `Share passwords and API keys for free: encrypted in your browser, opened once, never readable by the server.${c.publicSource === false ? "" : " Open source."}`,
   },
   nav: {
     skip: "Skip to content",
@@ -310,7 +310,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
     home: `${productName(c, "en")} home`,
   },
   hero: {
-    label: "Free and open source",
+    label: c.publicSource === false ? "Free" : "Free and open source",
     h1: "Send the password.\nKeep it out of the inbox.",
     lead: "Paste a password, an API key or login details. Your browser encrypts it before it leaves your device, the recipient opens the link once, and our server never sees what is inside.",
     points: ["Encrypted in your browser", "Opens once, then it is deleted", "No sign-up, no cookies, no tracking"],
@@ -451,12 +451,12 @@ const en = (c: SiteConfig, who: string): Copy => ({
       },
       {
         q: "How much does it cost?",
-        a: "Nothing. It is an open-source project under the MIT License.",
+        a: `Nothing.${c.publicSource === false ? "" : " It is an open-source project under the MIT License."}`,
       },
-      {
+      ...(c.publicSource === false ? [] : [{
         q: "How can I check that this site runs the published code?",
         a: `The code is published at ${c.repoUrl}. The version is shown at the bottom of every page. In a copy of that version, run “bun run verify ${c.origin}” to compare this site's JavaScript with its code.`,
-      },
+      }]),
       {
         q: "How do I report abuse?",
         a: `Write to ${c.contactEmail} with the link, leaving out the part after the # sign. We remove requests used for fraud.`,

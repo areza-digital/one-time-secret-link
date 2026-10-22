@@ -272,3 +272,30 @@ describe("product name", () => {
     expect(split.en.footer.reportSubject).toBe("Areza Secret: abuse report");
   });
 });
+
+describe("publicSource", () => {
+  test("false removes every link to the source and every open-source claim; the default keeps them", async () => {
+    const { mkdirSync, mkdtempSync, readFileSync, writeFileSync } = await import("node:fs");
+    const root = mkdtempSync(`${(await import("node:os")).tmpdir()}/vk-public-source-`);
+    mkdirSync(`${root}/theme`);
+    const base = JSON.stringify(`${import.meta.dir}/../themes/default/theme.ts`);
+    writeFileSync(`${root}/theme/theme.ts`, `import base from ${base};\nexport default { ...base, config: { ...base.config, publicSource: false } };\n`);
+    const build = async (env: Record<string, string>) => {
+      const proc = Bun.spawn(["bun", "run", `${import.meta.dir}/../site/build.ts`], { env: { ...process.env, ...env }, stdout: "ignore", stderr: "pipe" });
+      expect(await proc.exited).toBe(0);
+    };
+    await build({ VK_OUT: `${root}/open` });
+    await build({ VK_OUT: `${root}/closed`, VK_THEME: `${root}/theme` });
+    const files = ["index.html", "en/index.html", "404.html", "en/404.html", "_app/open.html", "en/_app/fill.html", "llms.txt"];
+    const read = (dir: string) => files.map((file) => readFileSync(`${root}/${dir}/${file}`, "utf8")).join("\n");
+    const open = read("open");
+    const closed = read("closed");
+    const claims = [/github\.com\/areza-digital\/vienkartine/i, /source code|šaltinio kodas/i, /open.source|atvir(as|o) kod/i, /opensource\.org/, /bun run verify/];
+    for (const claim of claims) {
+      expect(open).toMatch(claim);
+      expect(closed).not.toMatch(claim);
+    }
+    expect(closed).toContain('<meta name="vk-commit"'); // verify still finds the commit
+    expect(closed).toContain("Nothing."); // the cost answer keeps its first sentence
+  });
+});

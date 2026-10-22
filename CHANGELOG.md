@@ -2,6 +2,16 @@
 
 All notable changes to this project are listed here. The project follows [semantic versioning](https://semver.org).
 
+## 0.3.1 (2026-10-22)
+
+### Added
+
+- `SiteConfig.publicSource` (default `true`). With `false` the pages no longer link to the source repository or say
+  that the code is open source: no footer source link and no link on the version, no "open source" footer line or
+  hero label, no FAQ answer about `bun run verify`, no open-source sentence in the meta description or the price
+  answer, no license in the structured data, and no source line in `llms.txt`. The header gets no default button.
+  `vk-version` and `vk-commit` stay, so `bun run verify` still works. The default output is unchanged.
+
 ## 0.3.0 (2026-10-22)
 
 The security check of 2026-10-22 and the English name. Details of every finding are in
