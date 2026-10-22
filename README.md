@@ -76,7 +76,7 @@ There are no file uploads and no accounts.
 ## Security
 
 Report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md): through GitHub's private vulnerability
-reporting, or by email to hello@areza.digital. Please do not open a public issue.
+reporting, or by email to hello@areza.digital (the route that works today). Please do not open a public issue.
 
 The code was reviewed and penetration-tested before 0.2.0 and checked again on 2026-10-22 (dependency audit, Semgrep,
 gitleaks, TruffleHog and a manual review). Every finding and its status is in

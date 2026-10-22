@@ -17,6 +17,8 @@ Please report privately. Do not open a public issue or pull request for a vulner
    publish an encryption key. Keep the first email short (what and where, no exploit details) if you prefer, and we
    will agree a safe way to exchange the rest.
 
+Until GitHub reporting is switched on for this repository, email is the way to reach us: hello@areza.digital.
+
 If you are not sure whether something is a vulnerability, report it anyway.
 
 ### What to include

@@ -2,7 +2,7 @@
 
 All notable changes to this project are listed here. The project follows [semantic versioning](https://semver.org).
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-10-22)
 
 The security check of 2026-10-22 and the English name. Details of every finding are in
 [docs/security-reviews.md](docs/security-reviews.md#security-check-2026-10-22).
