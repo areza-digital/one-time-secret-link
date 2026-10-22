@@ -165,13 +165,21 @@ describe("reading env files like sh does", () => {
 
 describe("the CLI does not trust the server's answers", () => {
   /** Runs the CLI against a fake instance on 127.0.0.1 (http is allowed only for localhost) in a throwaway home. */
-  async function againstServer(handler: (request: Request) => Response, args: string[], input = "") {
+  async function againstServer(handler: (request: Request) => Response, args: string[], input = "", home?: string) {
     const { mkdtempSync } = await import("node:fs");
     const root = mkdtempSync(`${(await import("node:os")).tmpdir()}/vk-hostile-`);
     const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: handler });
+    const base = `http://127.0.0.1:${server.port}`;
+    if (home) {
+      const { readdirSync, readFileSync, writeFileSync } = await import("node:fs");
+      for (const file of readdirSync(`${home}/sent`)) {
+        const record = JSON.parse(readFileSync(`${home}/sent/${file}`, "utf8"));
+        writeFileSync(`${home}/sent/${file}`, JSON.stringify({ ...record, base }));
+      }
+    }
     try {
       const proc = Bun.spawn(["bun", "--no-env-file", "--config=/dev/null", `${import.meta.dir}/../cli/vienkartine.ts`, ...args], {
-        env: { PATH: process.env.PATH ?? "", VIENKARTINE_URL: `http://127.0.0.1:${server.port}`, VIENKARTINE_HOME: `${root}/home/vk` },
+        env: { PATH: process.env.PATH ?? "", VIENKARTINE_URL: base, VIENKARTINE_HOME: home ?? `${root}/home/vk` },
         stdin: new Blob([input]),
         stdout: "pipe",
         stderr: "pipe",
@@ -194,5 +202,30 @@ describe("the CLI does not trust the server's answers", () => {
     expect(send.err).toContain("unexpected answer");
     expect(send.code).not.toBe(0);
     expect(existsSync(`${send.root}/escaped.json`)).toBe(false);
+  });
+
+  test("control characters in server strings never reach the terminal", async () => {
+    const { mkdirSync, mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const escapes = "\u001b]52;c;aHR0cHM6Ly9ldmlsLmV4YW1wbGU=\u0007\u001b[2J";
+    const id = "A".repeat(22);
+    const hostile = (request: Request) => {
+      const path = new URL(request.url).pathname;
+      if (path === "/api/items") return Response.json({ error: `nope${escapes}` }, { status: 418 });
+      if (path.endsWith("/revoke")) return Response.json({ state: `revoked${escapes}` });
+      return Response.json({ id, state: `open${escapes}`, filledAt: null, readAt: null });
+    };
+    const failed = await againstServer(hostile, ["request", "probe"]);
+    expect(failed.err).toContain("server said 418 ?");
+    expect(failed.out + failed.err).not.toContain("\u001b");
+    // status and revoke print the server's state for a link recorded as sent from this machine
+    for (const args of [["status"], ["revoke", id]]) {
+      const home = mkdtempSync(`${tmpdir()}/vk-seed-`);
+      mkdirSync(`${home}/sent`, { recursive: true });
+      writeFileSync(`${home}/sent/${id}.json`, JSON.stringify({ id, manageToken: "m".repeat(43), label: null, base: "", createdAt: 0, expiresAt: Date.now() + 3_600_000 }));
+      const run = await againstServer(hostile, args, "", home);
+      expect(run.code).toBe(0);
+      expect(run.out + run.err).not.toContain("\u001b");
+    }
   });
 });

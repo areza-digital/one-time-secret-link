@@ -194,8 +194,13 @@ function created<T extends { id: string; expiresAt: number; manageToken?: string
   return data;
 }
 
+/** An error code or state from the server, printed only if it is a plain word: no terminal escapes from a hostile server. */
+function word(value: unknown): string {
+  return typeof value === "string" && /^[a-z_]{1,32}$/.test(value) ? value : "?";
+}
+
 function apiError(status: number, data: unknown): CliError {
-  const code = (data as { error?: string })?.error ?? "error";
+  const code = word((data as { error?: string })?.error ?? "error");
   if (status === 404) return new CliError("not found or expired", 3);
   if (status === 403) return new CliError("the key does not match this item", 4);
   if (status === 409) return new CliError("already used (read, answered or revoked)", 5);
@@ -464,7 +469,7 @@ async function status(args: ReturnType<typeof parseArgs>): Promise<void> {
       const { status: code, data } = await api<PublicItem>(saved.base, `/api/items/${saved.id}`);
       const state =
         code === 200
-          ? `${data.state}${data.filledAt ? ` filled ${new Date(data.filledAt).toISOString()}` : ""}${data.readAt ? ` read ${new Date(data.readAt).toISOString()}` : ""}`
+          ? `${word(data.state)}${data.filledAt ? ` filled ${new Date(data.filledAt).toISOString()}` : ""}${data.readAt ? ` read ${new Date(data.readAt).toISOString()}` : ""}`
           : "gone";
       const label = "label" in saved && saved.label ? saved.label : "";
       rows.push(`${saved.id}  ${kind === "requests" ? "request" : "send   "}  ${state.padEnd(10)}  ${label}`);
@@ -498,7 +503,7 @@ async function revoke(args: ReturnType<typeof parseArgs>): Promise<void> {
   if (code !== 200) throw apiError(code, data);
   rmSync(requestPath, { force: true });
   rmSync(sentPath, { force: true });
-  console.log(data.state === "read" ? `${id}: it was already read before you revoked it; rotate that credential` : `${id}: ${data.state}`);
+  console.log(data.state === "read" ? `${id}: it was already read before you revoked it; rotate that credential` : `${id}: ${word(data.state)}`);
 }
 
 /** Puts NAME=value from a local env file into a remote env file over ssh. The value travels on stdin only. */
