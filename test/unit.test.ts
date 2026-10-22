@@ -280,8 +280,11 @@ describe("publicSource", () => {
     mkdirSync(`${root}/theme`);
     const base = JSON.stringify(`${import.meta.dir}/../themes/default/theme.ts`);
     writeFileSync(`${root}/theme/theme.ts`, `import base from ${base};\nexport default { ...base, config: { ...base.config, publicSource: false } };\n`);
+    // Hermetic: deploy scripts export VK_THEME (and VK_REPO may be set), which must not leak into the default build.
+    const inherited: Record<string, string | undefined> = { ...process.env };
+    for (const name of ["VK_THEME", "VK_WRANGLER_CONFIG", "VK_REPO", "VK_OUT"]) delete inherited[name];
     const build = async (env: Record<string, string>) => {
-      const proc = Bun.spawn(["bun", "run", `${import.meta.dir}/../site/build.ts`], { env: { ...process.env, ...env }, stdout: "ignore", stderr: "pipe" });
+      const proc = Bun.spawn(["bun", "run", `${import.meta.dir}/../site/build.ts`], { env: { ...inherited, ...env }, stdout: "ignore", stderr: "pipe" });
       expect(await proc.exited).toBe(0);
     };
     await build({ VK_OUT: `${root}/open` });
