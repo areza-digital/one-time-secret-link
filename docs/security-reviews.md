@@ -1,12 +1,14 @@
 # Security reviews
 
-Before the 0.2.0 release the code was reviewed internally and penetration-tested. This page lists every finding of the
-two written security reports and what became of it. The reports themselves are in [reviews/](reviews/).
+Before the 0.2.0 release the code was reviewed internally and penetration-tested, and on 2026-10-22, when the
+repository became public, it was checked again. This page lists every finding and what became of it. The two written
+reports are in [reviews/](reviews/); the 2026-10-22 check is summarized in [SECURITY.md](../SECURITY.md#latest-check-2026-10-22).
 
 | Report | Date | Kind |
 |---|---|---|
 | [security-2026-10-12.md](reviews/security-2026-10-12.md) | 2026-10-12 | Code review of the Worker, the shared code, the browser code, the page copy and the CLI, with local experiments |
 | [security-2026-10-13-pentest.md](reviews/security-2026-10-13-pentest.md) | 2026-10-13 | Hands-on penetration test against a local Worker, the CLI and, read-only, the pilot deployment |
+| [Below](#security-check-2026-10-22) and in [SECURITY.md](../SECURITY.md#latest-check-2026-10-22) | 2026-10-22 | Dependency audit, static analysis, secret scan of the history, manual review and probes against a local Worker, after the repository became public |
 
 What this is and is not:
 
@@ -26,6 +28,7 @@ Status values:
 |---|---|
 | Fixed in 0.1.0 | Fixed in the pilot, after the first review |
 | Fixed in 0.2.0 | Fixed in the public release, after the penetration test |
+| Fixed in 0.3.0 | Fixed after the check of 2026-10-22 |
 | Partly fixed | The main problem is fixed; a smaller part is still open and described |
 | Mitigated | Made harder or less harmful; a residual risk is described |
 | Accepted limit | Not changed. It is a design limit or a trade-off, documented in the [threat model](threat-model.md) |
@@ -45,7 +48,7 @@ platform or deployment behavior the code alone could not prove.
 | 5 | The per-IP limit was bypassed with IPv6, and the global cap was cheap to exhaust | Medium | Fixed in 0.1.0 | IPv6 addresses are keyed by /64; the global cap is hourly (500 anonymous creates), so exhaustion heals within an hour. A distributed attacker can still use the cap: pentest 3 |
 | 6 | "Delete now" showed "deleted" when the link had already been read | Medium | Fixed in 0.1.0 | When the server answers `read`, the page fetches the item again and shows the read time |
 | 7 | The CLI burned the secret before checking that it could save it | Medium | Fixed in 0.1.0 | The save target is validated before the open call; a value that cannot be saved goes to a 0600 recovery file and the exit code is 7 |
-| 8 | Env-file quoting did not round-trip outside `sh`; leading and trailing spaces were trimmed; the first duplicate was used; inline comments were kept | Low | Partly fixed | Values are single-quoted; values with `'`, `$` or a line break are refused (control characters too, in 0.2.0); only one trailing newline is stripped; a test reads values back through `sh` and Bun's dotenv parser. Still open: `readEnvValue`, used by `send --from-env` and `push`, takes the first duplicate, trims the value and keeps an inline comment on unquoted values |
+| 8 | Env-file quoting did not round-trip outside `sh`; leading and trailing spaces were trimmed; the first duplicate was used; inline comments were kept | Low | Partly fixed | Values are single-quoted; values with `'`, `$` or a line break are refused (control characters too, in 0.2.0); only one trailing newline is stripped; a test reads values back through `sh` and Bun's dotenv parser. `readEnvValue` (used by `send --from-env` and `push`) reads like `sh`: the last definition wins and an unquoted value ends at a ` #` comment (fixed in 0.2.0, see 13c) |
 | 9 | `push` left old and new secrets readable and reported success on odd targets | Low | Partly fixed | Directory targets are refused; `--` precedes the host and the host pattern cannot start with `-`; the backup is mode 0600. Still open: an existing file keeps its mode on purpose (so the application can read it), the backup is kept, `cp` follows a symlink planted at the backup path, and the rewrite is not atomic |
 | 10 | `writePrivate` used a predictable temp name and followed symlinks | Low | Fixed in 0.1.0 | Random temp name created exclusively with mode 0600, then renamed over the target |
 | 11 | The CLI followed redirects and re-sent the auth body | Low | Fixed in 0.1.0 | `redirect: "error"` |
@@ -79,7 +82,7 @@ Numbers are the report's own. Item 13 in the report bundles several carry-overs,
 | 12 | The fill page trusts the recipient key the API serves (the fingerprint gap), and non post-quantum recipients were accepted | Info | Fixed (post-quantum only), accepted limit (fingerprint) | The server accepts only `age1pq1...` recipients. Fingerprint pinning is not implemented: it would not help against a server that can also change the JavaScript, which is the same root cause as in the threat model |
 | 13a | No receipt at expiry, so an interceptor's read disappeared with the item | Info | Fixed in 0.2.0 | A read item keeps its "opened at" record, without ciphertext, for 7 days |
 | 13b | An admin takedown showed visitors "The requester cancelled this request" | Info | Fixed in 0.2.0 | A separate `removed` state with its own message |
-| 13c | `readEnvValue` takes the first duplicate, trims the value and keeps an inline comment | Info | Open (minor) | Unchanged. It affects `send --from-env` and `push` |
+| 13c | `readEnvValue` takes the first duplicate, trims the value and keeps an inline comment | Info | Fixed in 0.2.0 | The last definition wins, quotes are honoured and an unquoted value stops at a ` #` comment, as in `sh`. Tested in `test/unit.test.ts` ("reading env files like sh does"). This table said "Open" until 2026-10-22 |
 | 13d | `push` keeps a 0644 file at 0644, keeps its backup, follows a symlink at the backup path and is not atomic | Info | Partly fixed | See review 9 |
 | 13e | If the network drops after the server released the secret, the secret is gone | Info | Accepted limit | Inherent to read-once. The sender sends it again |
 
@@ -105,6 +108,28 @@ promoting it widely:
 | Fix the CLI environment takeover | Fixed in 0.2.0 (pentest 1) |
 | Decide on availability | Mitigated (pentest 3); use Workers Paid for public instances |
 | Minimum TLS 1.2 and JavaScript Detections off, then path-scope `script-src` | Operator settings (pentest 8, 9); path-scoping not adopted |
+
+## Security check, 2026-10-22
+
+Tools, versions and the scope of the manual review are in [SECURITY.md](../SECURITY.md#latest-check-2026-10-22).
+Numbers are this page's own.
+
+| # | Finding | Severity | Status | How |
+|---|---|---|---|---|
+| 1 | The CLI's default instance (`VIENKARTINE_URL`), the README and SECURITY.md named a domain that does not serve this project. Whoever controls the default domain receives every request and one-time link made with the default settings, and serves the page that reads the key from the fragment | High | Fixed in 0.3.0 | The default and the documentation point at https://secret.areza.digital. The default may change only to a domain that serves this code |
+| 2 | `request` and `send` used the item id from the server's answer as a state file name. A hostile instance answering `"id": "../../../x"` made the CLI write the request's private key (or a manage token) to any `*.json` path the user can write, replacing that file | Medium | Fixed in 0.3.0 | The id, the expiry and the manage token must match the protocol patterns before anything is written. A test runs the CLI against a fake instance |
+| 3 | `bun run verify` could be passed by a tampered site: the script scan was case-sensitive and understood only double-quoted `src`, so `<SCRIPT src=…>`, `src='…'`, a bare value or an SVG `<script href>` went unseen; and only the home page was checked, not the app pages that decrypt secrets | Medium | Fixed in 0.3.0 | `scripts/scan-scripts.ts` matches tags and attributes without regard to case and refuses an href on a script. verify checks commit, CSP and scripts on `/`, `/en` and all six app pages, with a fresh id each run. A local server that injects a script passed the old version and fails the new one; unit tests cover each bypass |
+| 4 | The CLI printed error codes and item states from the server unchanged, so a hostile instance could send terminal escape sequences (clear the screen, rewrite lines, or set the clipboard through OSC 52 where the terminal allows it) | Low | Fixed in 0.3.0 | Printed only when they are plain words, `?` otherwise. Tested against a fake instance |
+| 5 | CI used movable action tags (`@v4`); Dependabot proposed new releases at once (Semgrep) | Low | Fixed in 0.3.0 | Actions pinned to commit SHAs; a 7-day Dependabot cooldown |
+| 6 | Semgrep: non-literal `RegExp` from a variable name (3), an incomplete `replace` before HTML escaping, a constant `X-Frame-Options` | Info | False positive | The name is checked against `^[A-Za-z_][A-Za-z0-9_]*$` first; the text is escaped after the replace; the header value is a constant `DENY` |
+| 7 | A hostile stylesheet can read secrets: CSS can match attribute values (an owner link or a language link carries the key after `#`) and probe rendered text. `verify` checks the JavaScript only | Low | Accepted limit | Same root cause as review D: whoever controls the deployment controls the page. Documented in the threat model. The hosted instance's theme is private, so its stylesheet cannot be reviewed from outside |
+| 8 | The threat model said link scanners cannot burn a link because they do not send the fragment. A scanner that runs the page and clicks buttons would use it up | Info | Accepted limit, documentation fixed | The recipient sees that the link was already opened. Threat model corrected |
+| 9 | The status of pentest 13c and review 8 still said `readEnvValue` was open, although 0.2.0 fixed and tested it | Info | Fixed in 0.3.0 (documentation) | Statuses above corrected |
+
+What held up, checked again: one success out of 25 parallel opens and 25 parallel answers (three rounds each);
+reopen racing an open left a consistent state; no CORS headers, preflights refused; bodies over 64 KiB refused;
+errors carry only a short code; the browser code still has no HTML sinks; no dependency advisories; no secrets in the
+history.
 
 ## Reporting new findings
 

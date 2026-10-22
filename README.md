@@ -1,9 +1,10 @@
-# Vienkartinė nuoroda
+# Areza Secret
 
 [![CI](https://github.com/areza-digital/vienkartine/actions/workflows/ci.yml/badge.svg)](https://github.com/areza-digital/vienkartine/actions/workflows/ci.yml)
 
-"Vienkartinė nuoroda" is Lithuanian for "one-time link". It is a small web app and command-line tool for handing over
-a password or an API key without leaving it in an inbox or a chat log.
+Areza Secret is a small web app and command-line tool for handing over a password or an API key without leaving it in
+an inbox or a chat log. On the Lithuanian pages of the hosted instance it is called **Vienkartinė nuoroda** ("one-time
+link"), which is where the repository, the CLI (`vienkartine`) and its `VIENKARTINE_*` variables get their name.
 
 The text is encrypted in the browser with [age](https://age-encryption.org) using post-quantum hybrid keys
 (ML-KEM-768 + X25519). The server stores only ciphertext and deletes it on the first read or at expiry (1 hour to
@@ -72,7 +73,17 @@ Limits:
 
 There are no file uploads and no accounts.
 
-## Security model in short
+## Security
+
+Report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md): through GitHub's private vulnerability
+reporting, or by email to hello@areza.digital. Please do not open a public issue.
+
+The code was reviewed and penetration-tested before 0.2.0 and checked again on 2026-10-22 (dependency audit, Semgrep,
+gitleaks, TruffleHog and a manual review). Every finding and its status is in
+[docs/security-reviews.md](docs/security-reviews.md), and what the 2026-10-22 check covered is in
+[SECURITY.md](SECURITY.md#latest-check-2026-10-22). These are the project's own reviews, not an independent audit.
+
+In short:
 
 - The server never receives the plaintext or the age identity. It stores ciphertext, hashes of the tokens, the public
   recipient key and label of a request, and timestamps.
@@ -89,7 +100,8 @@ Known limits, stated plainly:
 
 - **Whoever controls the deployment controls the JavaScript the page runs.** Open source and
   [`bun run verify`](#verifying-a-deployment) make tampering detectable by people who check; they do not make it
-  impossible.
+  impossible. The same goes for the HTML and the stylesheet, which a theme controls and `verify` does not check: CSS
+  alone can leak a key that sits in a link on the page.
 - For request links, a malicious server could hand the sender its own public key. This has the same root cause.
   One-time links are not affected by this particular attack, because the server never learns their key.
 - Whoever gets a one-time link first can open it. The real recipient then sees that it was already opened.
@@ -201,8 +213,9 @@ default theme (`themes/default`) uses system fonts and [Lucide](https://lucide.d
 `VK_PRODUCT`, `VK_REPO` and `VK_CONTACT`. Point `VK_THEME` at your own folder to replace it. Themes change HTML and
 CSS, never the JavaScript, so verification works for every instance. See [docs/theming.md](docs/theming.md).
 
-The hosted instance uses a private Areza theme: its fonts are under a license that forbids redistribution, so that
-theme, its name, logo and artwork are not part of this repository.
+The hosted instance uses a private Areza theme. Its fonts are licensed for self-hosting only, and it carries the Areza
+logo and artwork, so that theme is not part of this repository. A theme can name the product differently per language,
+as the hosted instance does (`product: { lt: "Vienkartinė nuoroda", en: "Areza Secret" }`).
 
 ## Verifying a deployment
 
@@ -217,10 +230,11 @@ bun run verify https://secret.areza.digital
 ```
 
 The script rebuilds the JavaScript and compares it byte for byte with what the site serves, checks the Subresource
-Integrity values, checks that the Content-Security-Policy allows only same-origin scripts, and checks that the page
-references no script outside `/assets/`. Use the same Bun version as `package.json` (`bun@1.4.2`); the script warns if
-it differs. It is a point-in-time check of the home page and its scripts. What it does not cover is listed in
-[docs/threat-model.md](docs/threat-model.md).
+Integrity values, checks that the Content-Security-Policy allows only same-origin scripts, and checks that no page references a
+script outside `/assets/`. It checks both landing pages and the six pages that open links and requests (`/s`, `/r`, `/o`
+and their `/en` versions). Use the same Bun version as `package.json` (`bun@1.4.2`); the script warns if it differs.
+It is a point-in-time check of the JavaScript only, not of the HTML or the stylesheet. What it does not cover is listed
+in [docs/threat-model.md](docs/threat-model.md#what-bun-run-verify-checks).
 
 ## Development
 

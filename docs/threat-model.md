@@ -1,6 +1,6 @@
 # Threat model
 
-This document describes version 0.2.0. It says what the system protects, against whom, how, and where the protection
+This document describes version 0.3.0. It says what the system protects, against whom, how, and where the protection
 stops. Where a claim depends on code, the file is named so you can check it. If you find a mistake, see
 [SECURITY.md](../SECURITY.md) for vulnerabilities, or open an issue for wording problems.
 
@@ -112,7 +112,7 @@ These hold **when the JavaScript your browser runs is the code in this repositor
 | Database reader opens or revokes items | Only SHA-256 of the auth and manage tokens is stored; the tokens are 256-bit | `src/worker/index.ts`, `src/worker/box.ts` |
 | Timing attack on token checks | `crypto.subtle.timingSafeEqual` | `src/worker/box.ts`, `src/worker/index.ts` |
 | Two readers get the secret | One Durable Object per item, atomic open | `src/worker/box.ts` |
-| Link scanners or previews burn the link | Opening needs an explicit click and a token derived from the fragment, which scanners do not send | `src/web/app.ts` |
+| Link scanners or previews burn the link | Opening needs an explicit click on Show and a token derived from the fragment. A scanner that only fetches the URL never sends the fragment. One that runs the page and clicks buttons would use the link up (see [Other limits](#other-limits)) | `src/web/app.ts` |
 | Cross-site request forgery | No cookies or ambient credentials; `fetch` uses `credentials: "omit"`; POSTs need `Content-Type: application/json`; a mismatching `Origin` is refused with 403 | `src/worker/index.ts` |
 | Cross-site scripting | The app code builds the page from text nodes and has no HTML sinks; CSP `script-src 'self'` with no inline scripts; `require-trusted-types-for 'script'` and `trusted-types 'none'`; labels are rendered as text | `src/web/app.ts`, `src/worker/csp.ts` |
 | Tampered script or stylesheet files | Subresource Integrity (sha384) on every script and the stylesheet; content-hashed file names; no third-party scripts, fonts or analytics | `site/build.ts` |
@@ -129,8 +129,9 @@ These hold **when the JavaScript your browser runs is the code in this repositor
 | CLI: planted `.env` or `bunfig.toml` | The shebang starts Bun with `--no-env-file --config=/dev/null`; the operator token is sent only to the URL it is pinned to | `cli/vienkartine.ts` |
 | CLI: token or key sent to the wrong host | `https` only (or localhost); redirects refused; links on other hosts refused; operator token pinned to its URL | `cli/vienkartine.ts` |
 | CLI: secret burned but lost | Target checked before the open call; a failed save keeps the value in a 0600 recovery file | `cli/vienkartine.ts` |
+| CLI: a hostile or compromised instance | The item id, expiry and manage token in the server's answer are checked before the id becomes a file name; error codes and states from the server are printed only when they are plain words, so no terminal escape sequences | `cli/vienkartine.ts` |
 | CLI: secrets written unsafely | Atomic 0600 writes with random temp names; env values with `'`, `$`, line breaks or control characters refused; the previous file kept as `.vienkartine.bak`; secrets never printed | `cli/vienkartine.ts` |
-| Supply chain | One runtime dependency, `age-encryption` 0.3.1 (pinned), with its `@noble/*` and `@scure/base` dependencies; `bun.lock` committed; CI installs with `--frozen-lockfile`; Dependabot is configured | `package.json`, `.github/` |
+| Supply chain | One runtime dependency, `age-encryption` 0.3.1 (pinned), with its `@noble/*` and `@scure/base` dependencies; `bun.lock` committed; CI installs with `--frozen-lockfile`; CI actions pinned to commit SHAs; Dependabot waits 7 days before proposing a release | `package.json`, `.github/` |
 
 ## Known limits
 
@@ -147,6 +148,11 @@ JavaScript and compares it with the served files; Subresource Integrity and the 
 anything else. What remains: verification is something a person has to do, it is a point-in-time check from one
 vantage point, and nothing alerts users when the code changes. There is no browser extension or pinning mechanism.
 Trust the operator accordingly, or run your own instance.
+
+The same holds for the HTML and the stylesheet, which `bun run verify` does not check because a theme controls them.
+A hostile stylesheet can read secrets without any script: CSS can match attribute values, such as an owner link or a
+language link that carries the key after the `#`, and can probe rendered text. An instance with a private theme (the
+hosted one, for example) cannot have its stylesheet reviewed from outside.
 
 ### Request links depend on the server returning the right public key
 
@@ -186,7 +192,7 @@ password manager.
 Features such as JavaScript Detections, Rocket Loader, Email Obfuscation, Zaraz and Web Analytics auto-injection add
 scripts to pages. The CSP blocks inline scripts, so an injected inline bootstrap does not run. But `script-src 'self'`
 also allows same-origin scripts under `/cdn-cgi/`, which some of these features use. Turn them off for the hostname
-(see the [operator checklist](#operator-checklist)). `bun run verify` fails if the home page references any script
+(see the [operator checklist](#operator-checklist)). `bun run verify` fails if any page it checks references a script
 outside `/assets/`.
 
 ### Deleted data can be restored for 30 days
@@ -208,6 +214,9 @@ hour is shared. Public instances should use Workers Paid, where this becomes a c
 
 - **A lost response loses the secret.** The ciphertext is removed when it is released. If the network drops after the
   server has done so, the secret is gone and the sender must send it again. A retry shows the item as already opened.
+- **A link scanner that runs the page can use up a one-time link.** Most scanners only fetch the URL, which never
+  sends the fragment. One that renders the page and clicks Show would open it; the recipient then sees that the link
+  was already opened.
 - **Receipts last 7 days.** After that, a read leaves no trace.
 - **A malicious server can delete, burn or hide items.** It cannot read them, but it sees the auth token when an item
   is created and could use it.
@@ -235,19 +244,24 @@ hour is shared. Public instances should use Workers Paid, where this becomes a c
 
 ## What `bun run verify` checks
 
-`scripts/verify.ts` fetches the home page of an instance and reads `vk-commit`. After you check out that commit, it:
+`scripts/verify.ts` fetches both landing pages (`/`, `/en`) and the six app pages (`/s`, `/r` and `/o`, each also
+under `/en`, with a fresh random id each run) and reads `vk-commit`. After you check out that commit, it:
 
-1. checks that the CSP `script-src` is exactly `'self'`, and warns if `require-trusted-types-for 'script'` is missing;
-2. fails if the page references a script from outside `/assets/`, and warns about inline scripts that are not JSON data;
+1. checks on every page that it names the same commit and that the CSP `script-src` is exactly `'self'`, and warns if
+   `require-trusted-types-for 'script'` is missing;
+2. fails if a page has any `<script>` that loads code from outside `/assets/`, matching tags and attributes without
+   regard to case and counting an SVG `<script href>` (`scripts/scan-scripts.ts`), and warns about inline scripts that
+   are not JSON data;
 3. checks that your checkout matches the commit (and warns about a `-dirty` site, a dirty checkout, or a different Bun
    version);
-4. rebuilds the JavaScript into a temporary directory and, for every script the page references, checks that the
+4. rebuilds the JavaScript into a temporary directory and, for every script the pages reference, checks that the
    `integrity` attribute matches the served file, that a file with the same content-hashed name was produced by your
    build, and that its bytes are identical.
 
 It does **not** check: the HTML or the CSS (a theme controls these, so a hostile theme could restyle the page
-misleadingly); the page copy shipped as JSON in the HTML; pages other than the home page; what other visitors, or you
-at another time, are served; the Worker code behind the API. A match proves that the scripts served to this request
+misleadingly, or read secrets with CSS, see [Known limits](#whoever-controls-the-deployment-controls-the-javascript));
+the page copy shipped as JSON in the HTML; what other visitors, or you at another time, are served; the Worker code
+behind the API. A match proves that the scripts served to this request
 are the scripts of that commit. The JavaScript does not depend on the theme, so the check works for any instance.
 
 ## Server interface
