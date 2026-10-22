@@ -55,6 +55,7 @@ and the Worker agree.
 |---|---|---|
 | `VERIFIED_NAME` | `Operator` | The name shown after "Verified:" on items created with the operator token |
 | `INDEXABLE` | `"false"` | `"true"` lets search engines index the two landing pages (and publishes `robots.txt` with a sitemap). App pages and the API are always `noindex`. With `"false"`, everything is `noindex` and `robots.txt` disallows all |
+| `PREVIEW_BOTS` | `""` | Comma-separated user agents of link-preview bots, for example `LinkedInBot` or `LinkedInBot,facebookexternalhit,Twitterbot`. While `INDEXABLE` is `"false"`, `robots.txt` lets these bots read the landing pages and the social image, so a shared link gets a preview card, and still disallows the app pages and the API. Every other crawler stays disallowed, and the pages keep their `noindex` tags |
 | `RESERVED_LABEL_WORDS` | `""` | Comma-separated words that anonymous request labels may not contain. Empty means the built-in defaults. **A non-empty value replaces the defaults.** A plain entry matches anywhere in the label, ignoring case, accents and lookalike letters (`patvirtin` catches `patvirtinta`). An entry starting with `=` matches whole words only (`=pin` blocks `PIN` but not `pinigai`) |
 
 The built-in defaults are `verif`, `patvirtin`, `official`, `oficial`, and the whole words `pin`, `pin1`, `pin2`, `puk`,
