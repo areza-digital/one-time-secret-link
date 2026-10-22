@@ -162,3 +162,37 @@ describe("reading env files like sh does", () => {
     expect(() => readEnvValue(`${file}:MISSING`)).toThrow();
   });
 });
+
+describe("the CLI does not trust the server's answers", () => {
+  /** Runs the CLI against a fake instance on 127.0.0.1 (http is allowed only for localhost) in a throwaway home. */
+  async function againstServer(handler: (request: Request) => Response, args: string[], input = "") {
+    const { mkdtempSync } = await import("node:fs");
+    const root = mkdtempSync(`${(await import("node:os")).tmpdir()}/vk-hostile-`);
+    const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: handler });
+    try {
+      const proc = Bun.spawn(["bun", "--no-env-file", "--config=/dev/null", `${import.meta.dir}/../cli/vienkartine.ts`, ...args], {
+        env: { PATH: process.env.PATH ?? "", VIENKARTINE_URL: `http://127.0.0.1:${server.port}`, VIENKARTINE_HOME: `${root}/home/vk` },
+        stdin: new Blob([input]),
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+      return { code: await proc.exited, out, err, root };
+    } finally {
+      server.stop(true);
+    }
+  }
+
+  test("an item id that walks out of VIENKARTINE_HOME is refused before anything is written", async () => {
+    const { existsSync } = await import("node:fs");
+    const evil = () => Response.json({ id: "../../../escaped", expiresAt: Date.now() + 3_600_000, manageToken: "m".repeat(43) }, { status: 201 });
+    const request = await againstServer(evil, ["request", "probe"]);
+    expect(request.code).not.toBe(0);
+    expect(request.err).toContain("unexpected answer");
+    expect(existsSync(`${request.root}/escaped.json`)).toBe(false);
+    const send = await againstServer(evil, ["send", "--print"], "a secret");
+    expect(send.err).toContain("unexpected answer");
+    expect(send.code).not.toBe(0);
+    expect(existsSync(`${send.root}/escaped.json`)).toBe(false);
+  });
+});

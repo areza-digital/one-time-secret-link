@@ -11,6 +11,7 @@ import { decryptText, encryptText, isIdentity, newIdentity } from "../src/shared
 import {
   ID_PATTERN,
   LIMITS,
+  TOKEN_PATTERN,
   authFromIdentity,
   cleanLabel,
   linkFor,
@@ -184,6 +185,15 @@ async function api<T>(base: string, path: string, body?: unknown, extra: Record<
   return { status: response.status, data };
 }
 
+/** The answer to a create call. The id becomes a file name under VIENKARTINE_HOME, so a hostile server must not pick it. */
+function created<T extends { id: string; expiresAt: number; manageToken?: string }>(status: number, data: T, send = false): T {
+  if (status !== 201) throw apiError(status, data);
+  const valid =
+    ID_PATTERN.test(String(data.id)) && Number.isSafeInteger(data.expiresAt) && (!send || TOKEN_PATTERN.test(String(data.manageToken)));
+  if (!valid) throw new CliError(`unexpected answer from ${BASE}; nothing was saved`);
+  return data;
+}
+
 function apiError(status: number, data: unknown): CliError {
   const code = (data as { error?: string })?.error ?? "error";
   if (status === 404) return new CliError("not found or expired", 3);
@@ -290,14 +300,14 @@ async function request(args: ReturnType<typeof parseArgs>): Promise<void> {
 
   const { identity, recipient } = await newIdentity();
   const auth = await authFromIdentity(identity);
-  const { status, data } = await api<{ id: string; expiresAt: number }>(BASE, "/api/items", {
+  const answer = await api<{ id: string; expiresAt: number }>(BASE, "/api/items", {
     kind: "request",
     recipient,
     label,
     ttl,
     auth,
   });
-  if (status !== 201) throw apiError(status, data);
+  const data = created(answer.status, answer.data);
 
   const saved: SavedRequest = {
     id: data.id,
@@ -334,13 +344,13 @@ async function send(args: ReturnType<typeof parseArgs>): Promise<void> {
   const lang = parseLang(flag(args.flags, "lang"));
   const { identity, recipient } = await newIdentity();
   const ciphertext = await encryptText(value, recipient);
-  const { status, data } = await api<{ id: string; expiresAt: number; manageToken: string }>(BASE, "/api/items", {
+  const answer = await api<{ id: string; expiresAt: number; manageToken: string }>(BASE, "/api/items", {
     kind: "send",
     ciphertext,
     ttl,
     auth: await authFromIdentity(identity),
   });
-  if (status !== 201) throw apiError(status, data);
+  const data = created(answer.status, answer.data, true);
   const saved: SavedSend = {
     id: data.id,
     manageToken: data.manageToken,
