@@ -2,13 +2,13 @@
 // `ui` is shipped to the browser as JSON for the interactive parts.
 
 import type { Lang } from "../src/shared/protocol";
-import type { SiteConfig } from "./theme";
+import { productName, type SiteConfig } from "./theme";
 
 const lt = (c: SiteConfig, who: string) => ({
   htmlLang: "lt",
   ogLocale: "lt_LT",
   meta: {
-    title: `${c.product}: saugus slaptažodžių perdavimas`,
+    title: `${productName(c, "lt")}: saugus slaptažodžių perdavimas`,
     description:
       "Nemokamai perduokite slaptažodžius ir API raktus: šifruojama naršyklėje, atidaroma vieną kartą, serveris turinio nemato. Atviras kodas.",
   },
@@ -20,7 +20,7 @@ const lt = (c: SiteConfig, who: string) => ({
     faq: "DUK",
     theme: "Perjungti šviesią ar tamsią temą",
     language: "Kalba",
-    home: `${c.product}: pradžia`,
+    home: `${productName(c, "lt")}: pradžia`,
   },
   hero: {
     label: "Nemokamas atviro kodo įrankis",
@@ -181,7 +181,7 @@ const lt = (c: SiteConfig, who: string) => ({
     source: "Šaltinio kodas",
     version: "Versija",
     report: "Pranešti apie piktnaudžiavimą",
-    reportSubject: `${c.product}: pranešimas apie piktnaudžiavimą`,
+    reportSubject: `${productName(c, "lt")}: pranešimas apie piktnaudžiavimą`,
     openSource: "Atviro kodo projektas, MIT licencija",
   },
   notFound: {
@@ -295,7 +295,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
   htmlLang: "en",
   ogLocale: "en_GB",
   meta: {
-    title: `${c.product}: one-time links for passwords`,
+    title: `${productName(c, "en")}: one-time links for passwords`,
     description:
       "Share passwords and API keys for free: encrypted in your browser, opened once, never readable by the server. Open source.",
   },
@@ -307,7 +307,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
     faq: "FAQ",
     theme: "Switch between light and dark",
     language: "Language",
-    home: `${c.product} home`,
+    home: `${productName(c, "en")} home`,
   },
   hero: {
     label: "Free and open source",
@@ -468,7 +468,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
     source: "Source code",
     version: "Version",
     report: "Report abuse",
-    reportSubject: `${c.product}: abuse report`,
+    reportSubject: `${productName(c, "en")}: abuse report`,
     openSource: "Open source, MIT License",
   },
   notFound: {

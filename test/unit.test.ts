@@ -259,3 +259,16 @@ describe("verify: the script scan", () => {
     expect(scanScripts('<script>alert(1)</script><script data-src="x">x()</script>')).toMatchObject({ problems: [], inline: 2 });
   });
 });
+
+describe("product name", () => {
+  test("one name for both languages, or one per language", async () => {
+    const { coreCopy } = await import("../site/copy");
+    const config = { origin: "https://secret.example.com", repoUrl: "https://example.com/repo", contactEmail: "a@example.com" };
+    const single = coreCopy({ ...config, product: "Same" });
+    expect([single.lt.meta.title, single.en.meta.title]).toEqual(["Same: saugus slaptažodžių perdavimas", "Same: one-time links for passwords"]);
+    const split = coreCopy({ ...config, product: { lt: "Vienkartinė nuoroda", en: "Areza Secret" } });
+    expect(split.lt.nav.home).toBe("Vienkartinė nuoroda: pradžia");
+    expect(split.en.meta.title).toBe("Areza Secret: one-time links for passwords");
+    expect(split.en.footer.reportSubject).toBe("Areza Secret: abuse report");
+  });
+});

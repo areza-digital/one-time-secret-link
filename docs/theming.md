@@ -67,7 +67,7 @@ A short name. It appears in the build log and as a comment (`/* theme: <id> */`)
 | Field | Meaning |
 |---|---|
 | `origin` | Canonical origin, no trailing slash, for example `https://secret.example.com`. Required. Used in canonical and hreflang links, Open Graph tags, the sitemap, `llms.txt` and the JSON-LD |
-| `product` | Product name in the header, page titles, `og:site_name` and the footer |
+| `product` | Product name in the header, page titles, `og:site_name`, structured data and the abuse-report subject. A string, or `{ lt: "…", en: "…" }` for a different name per language |
 | `repoUrl` | Public source repository. Linked from the footer and from the commit name (`<repoUrl>/tree/<commit>`) |
 | `contactEmail` | Where abuse reports and questions go. Shown in the footer and the FAQ |
 | `operator` | Optional. `{ name, url: { lt, en } }`: who runs the instance. Shown after "Made by" in the footer (Lithuanian: "Sukūrė") and used in the JSON-LD. Without it the footer says "Open source project, MIT license" |
