@@ -2,6 +2,42 @@
 
 All notable changes to this project are listed here. The project follows [semantic versioning](https://semver.org).
 
+## 0.3.0 (unreleased)
+
+The security check of 2026-10-22 and the English name. Details of every finding are in
+[docs/security-reviews.md](docs/security-reviews.md#security-check-2026-10-22).
+
+### Naming
+
+- In English the project is called **Areza Secret** again; the Lithuanian name stays **Vienkartinė nuoroda**. The
+  repository, the CLI (`vienkartine`) and its `VIENKARTINE_*` variables keep their names.
+- `SiteConfig.product` takes one name per language (`{ lt, en }`) as well as a single string.
+
+### Security fixes
+
+- The CLI's default instance is https://secret.areza.digital. The default and the documentation named a domain that
+  does not serve this project (High).
+- The CLI checks the item id, expiry and manage token in the server's answer before the id becomes a file name. A
+  hostile instance could make it write a private key to any `*.json` path the user can write (Medium).
+- `bun run verify` checks every `<script>` tag without regard to case (including SVG `<script href>`) on both landing
+  pages and all six app pages; before, a tampered site could pass it (Medium).
+- The CLI no longer prints control characters that a server sends in error codes or states (Low).
+- CI actions are pinned to commit SHAs; Dependabot waits 7 days before proposing a release (Low).
+
+### Added
+
+- `PREVIEW_BOTS`: link-preview bots (for example `LinkedInBot`) may read the landing pages and the social image of an
+  instance that is not indexable, so shared links get a preview card. The app pages and the API stay disallowed, and
+  the pages keep their `noindex` tags.
+
+### Documentation
+
+- SECURITY.md records the 2026-10-22 check: tools, versions, findings and accepted risks. The README has a Security
+  section.
+- The threat model says what `verify` cannot prove: a hostile stylesheet can read secrets, and a link scanner that runs
+  the page and clicks Show uses up a one-time link.
+- Corrected statuses: `readEnvValue` (pentest 13c, review 8) was fixed in 0.2.0, not open.
+
 ## 0.2.0 (2026-10-13)
 
 First public release. The code is open source under the MIT license, and the project is renamed from the internal

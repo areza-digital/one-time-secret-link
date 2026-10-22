@@ -1,6 +1,6 @@
 # Self-hosting
 
-Vienkartinė nuoroda runs as one Cloudflare Worker with two Durable Object classes. There is no database to set up, no
+Areza Secret runs as one Cloudflare Worker with two Durable Object classes. There is no database to set up, no
 server to patch and nothing to back up: every item lives in a Durable Object and deletes itself at expiry. The free
 Workers plan is enough to run it (the Durable Objects use the SQLite backend). A public instance should use Workers
 Paid; see [Plans and limits](#plans-and-limits).
