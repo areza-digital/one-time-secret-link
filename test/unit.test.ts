@@ -229,3 +229,33 @@ describe("the CLI does not trust the server's answers", () => {
     }
   });
 });
+
+describe("verify: the script scan", () => {
+  test("our own pages pass; scripts a browser would run from anywhere else are problems", async () => {
+    const { scanScripts } = await import("../scripts/scan-scripts");
+    const ours =
+      '<script src="/assets/theme-abc.js" integrity="sha384-x"></script><script type="module" src="/assets/app-abc.js" integrity="sha384-y"></script>' +
+      '<script type="application/ld+json">{"a":1}</script><script type="application/json" id="ui-copy">{"b":2}</script>';
+    expect(scanScripts(ours)).toEqual({
+      sources: [
+        { src: "/assets/theme-abc.js", integrity: "sha384-x" },
+        { src: "/assets/app-abc.js", integrity: "sha384-y" },
+      ],
+      problems: [],
+      inline: 0,
+    });
+    for (const tampered of [
+      '<SCRIPT src="/cdn-cgi/evil.js"></SCRIPT>', // HTML is case-insensitive
+      '<script SRC=/cdn-cgi/evil.js></script>', // bare value
+      "<script src='/cdn-cgi/evil.js'></script>", // single quotes
+      '<script/src="/cdn-cgi/evil.js"></script>', // slash as a separator
+      '<svg><script href="/cdn-cgi/evil.js"></script></svg>', // SVG script
+      '<svg><script xlink:href="/cdn-cgi/evil.js"></script></svg>',
+      '<script src="/assets/../cdn-cgi/evil.js"></script>', // path tricks
+      '<script src="https://cdn.example/app.js"></script>',
+    ]) {
+      expect(scanScripts(ours + tampered).problems.length).toBe(1);
+    }
+    expect(scanScripts('<script>alert(1)</script><script data-src="x">x()</script>')).toMatchObject({ problems: [], inline: 2 });
+  });
+});

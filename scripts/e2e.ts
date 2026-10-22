@@ -189,6 +189,13 @@ try {
   check("operator token bypasses the IP limit", ownerStill.code === 0, ownerStill.err);
   const anonCli = cli(["request", "anon via cli"], undefined, anonymous);
   check("anonymous CLI is limited too", anonCli.code === 6, anonCli.err);
+
+  // 7. `bun run verify` accepts an honest instance built from this checkout (all page kinds).
+  if (server) {
+    const verify = Bun.spawnSync(["bun", "run", join(import.meta.dir, "verify.ts"), BASE]);
+    const out = verify.stdout.toString();
+    check("verify passes on every page kind of this build", verify.exitCode === 0 && (out.match(/^ok {4}\/\S*: CSP/gm) ?? []).length === 8, out.split("\n").filter((line) => line.startsWith("FAIL")).join("; "));
+  }
 } finally {
   server?.kill();
   rmSync(home, { recursive: true, force: true });
