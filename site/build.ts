@@ -193,10 +193,11 @@ function header(ctx: Ctx, lang: Lang, kind: PageKind): string {
   const other: Lang = lang === "lt" ? "en" : "lt";
   // On app pages the switch keeps the same item; app.ts adds the fragment, so the key is never lost.
   const switchHref = kind === "home" || kind === "404" ? home(other) : "#";
-  const link = theme.config.headerLink ?? {
-    label: { lt: c.footer.source, en: c.footer.source },
-    href: { lt: theme.config.repoUrl, en: theme.config.repoUrl },
-  };
+  const link =
+    theme.config.headerLink ??
+    (theme.config.publicSource === false
+      ? null
+      : { label: { lt: c.footer.source, en: c.footer.source }, href: { lt: theme.config.repoUrl, en: theme.config.repoUrl } });
   const divider = theme.divider();
   return `<a class="skip-link" href="#main">${c.nav.skip}</a>
 <header class="site-header">
@@ -206,7 +207,7 @@ function header(ctx: Ctx, lang: Lang, kind: PageKind): string {
     <div class="header-actions">
       <a class="lang-switch" href="${switchHref}" hreflang="${other}" lang="${other}" data-lang-switch="${other}" aria-label="${c.nav.language}: ${other.toUpperCase()}"><span class="lang-current">${lang.toUpperCase()}</span><span class="lang-sep">/</span><span>${other.toUpperCase()}</span></a>
       <button class="theme-toggle" type="button" data-theme-toggle aria-label="${esc(c.nav.theme)}">${theme.glyph("theme")}</button>
-      ${button(link.label[lang], theme.glyph("chevron"), { href: link.href[lang], className: "header-cta" })}
+      ${link ? button(link.label[lang], theme.glyph("chevron"), { href: link.href[lang], className: "header-cta" }) : ""}
     </div>
   </div>
   ${divider ? `<div class="site-container">${divider}</div>` : ""}
@@ -217,21 +218,22 @@ function footer(ctx: Ctx, lang: Lang): string {
   const { theme, version: v } = ctx;
   const c = ctx.copy[lang];
   const { operator, repoUrl, contactEmail } = theme.config;
+  const open = theme.config.publicSource !== false; // false: no source link, no "open source" claim
   const report = `mailto:${contactEmail}?subject=${encodeURIComponent(c.footer.reportSubject)}`;
   const commitHref = v.commit === "unknown" ? repoUrl : `${repoUrl}/tree/${v.commit.replace(/-dirty$/, "")}`;
   const brand = operator
     ? `<a class="footer-brand" href="${esc(operator.url[lang])}">${theme.logo()}<span>${c.footer.made} ${esc(operator.name)}</span></a>`
-    : `<span class="footer-brand">${theme.logo()}<span>${c.footer.openSource}</span></span>`;
+    : `<span class="footer-brand">${theme.logo()}${open ? `<span>${c.footer.openSource}</span>` : ""}</span>`;
   const divider = theme.divider();
   return `<footer class="site-footer">
   <div class="site-container footer-inner">
     ${brand}
-    <nav class="footer-links" aria-label="${c.footer.source}">
-      <a href="${esc(repoUrl)}">${c.footer.source}</a>
+    <nav class="footer-links"${open ? ` aria-label="${c.footer.source}"` : ""}>
+      ${open ? `<a href="${esc(repoUrl)}">${c.footer.source}</a>` : ""}
       <a href="mailto:${esc(contactEmail)}">${esc(contactEmail)}</a>
       <a href="${esc(report)}">${c.footer.report}</a>
     </nav>
-    <p class="footer-copy"><a href="${esc(commitHref)}" data-version>${c.footer.version} ${esc(v.version)} · ${esc(v.short)}</a></p>
+    <p class="footer-copy">${open ? `<a href="${esc(commitHref)}" data-version>` : "<span data-version>"}${c.footer.version} ${esc(v.version)} · ${esc(v.short)}${open ? "</a>" : "</span>"}</p>
   </div>
   ${divider ? `<div class="site-container">${divider}</div>` : ""}
 </footer>`;
@@ -466,7 +468,7 @@ function structuredData(ctx: Ctx, lang: Lang): string {
       browserRequirements: "Requires JavaScript and a current browser",
       inLanguage: c.htmlLang,
       isAccessibleForFree: true,
-      license: "https://opensource.org/licenses/MIT",
+      ...(config.publicSource === false ? {} : { license: "https://opensource.org/licenses/MIT" }),
       offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
       ...(orgId ? { publisher: { "@id": orgId } } : {}),
     },
@@ -594,12 +596,11 @@ ${["/", "/en"]
     "llms.txt",
     `# ${productName(theme.config, "en")}
 
-> Free, open-source tool for sharing passwords and API keys with one-time links and request links. Text is encrypted in the browser with age (post-quantum hybrid keys, ML-KEM-768 + X25519); the server stores only ciphertext and deletes it on first read or at expiry (1 hour to 7 days).
+> Free${theme.config.publicSource === false ? "" : ", open-source"} tool for sharing passwords and API keys with one-time links and request links. Text is encrypted in the browser with age (post-quantum hybrid keys, ML-KEM-768 + X25519); the server stores only ciphertext and deletes it on first read or at expiry (1 hour to 7 days).
 
 - [Lithuanian page](${origin}/): send a one-time secret or ask someone for one
 - [English page](${origin}/en): the same in English
-- [Source code](${theme.config.repoUrl}): MIT license
-`,
+${theme.config.publicSource === false ? "" : `- [Source code](${theme.config.repoUrl}): MIT license\n`}`,
   );
   console.log(`built ${out} with theme ${theme.id} (${ctx.assets.app}, ${ctx.assets.css}, ${ctx.version.short})`);
   return { out, assets: ctx.assets, version: ctx.version };
