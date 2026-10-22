@@ -4,8 +4,14 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week before proposing a new release, so a hijacked version is usually caught upstream first.
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: bun
     directory: /
     schedule:
       interval: weekly
+    # Wait a week before proposing a new release, so a hijacked version is usually caught upstream first.
+    cooldown:
+      default-days: 7

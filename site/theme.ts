@@ -26,10 +26,10 @@ export type IconName =
 export type GlyphName = "check" | "cross" | "plus" | "theme" | "chevron";
 
 export interface SiteConfig {
-  /** Canonical origin without a trailing slash, e.g. https://vienkartine.lt */
+  /** Canonical origin without a trailing slash, e.g. https://secret.example.com */
   origin: string;
-  /** Product name shown in the header, titles and footer. */
-  product: string;
+  /** Product name shown in the header, titles and social previews: one name, or one per language. */
+  product: string | Record<Lang, string>;
   /** Public source repository, linked from the footer and used by `verify`. */
   repoUrl: string;
   /** Where abuse reports and questions go. */
@@ -63,6 +63,10 @@ export interface Theme {
   cta?: Record<Lang, { h2: string; text: string; button: string; href: string }>;
   /** Change any copy after the core copy is built. */
   copy?: (lang: Lang, copy: Copy) => Copy;
+}
+
+export function productName(config: SiteConfig, lang: Lang): string {
+  return typeof config.product === "string" ? config.product : config.product[lang];
 }
 
 /** VK_THEME=/path/to/theme-dir picks a theme (its theme.ts default-exports a Theme); default is themes/default. */

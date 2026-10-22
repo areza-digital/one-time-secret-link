@@ -29,6 +29,7 @@
   "vars": {
     "VERIFIED_NAME": "Operator",
     "INDEXABLE": "false",
+    "PREVIEW_BOTS": "",
     "RESERVED_LABEL_WORDS": ""
   },
   "observability": { "enabled": false }

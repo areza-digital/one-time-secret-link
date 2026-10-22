@@ -29,6 +29,8 @@ export interface Env {
   LIMITS: DurableObjectNamespace<RateLimiter>;
   VERIFIED_NAME: string;
   INDEXABLE: string;
+  /** Comma-separated link-preview bots (e.g. LinkedInBot) that may read the landing pages while INDEXABLE is "false". */
+  PREVIEW_BOTS?: string;
   /** Comma-separated words anonymous request labels may not contain (defaults: verif, patvirtin, official, oficial). */
   RESERVED_LABEL_WORDS?: string;
   /** SHA-256 hex of the operator token: requests carrying it are "verified" and skip IP limits. */
@@ -270,22 +272,14 @@ function json(body: unknown, status = 200): Response {
 }
 
 function robots(env: Env, url: URL): Response {
+  const appPages = ["/s/", "/r/", "/o/", "/en/s/", "/en/r/", "/en/o/", "/api/"].map((path) => `Disallow: ${path}`);
+  // Preview bots get the landing pages (and the social image) for a link card; the noindex tags keep them out of search.
+  const bots = (env.PREVIEW_BOTS ?? "").split(",").map((bot) => bot.trim()).filter((bot) => /^[A-Za-z0-9_.-]+$/.test(bot));
+  const previews = bots.length ? [...bots.map((bot) => `User-agent: ${bot}`), "Allow: /", ...appPages, ""] : [];
   const lines =
     env.INDEXABLE === "true"
-      ? [
-          "User-agent: *",
-          "Allow: /",
-          "Disallow: /s/",
-          "Disallow: /r/",
-          "Disallow: /o/",
-          "Disallow: /en/s/",
-          "Disallow: /en/r/",
-          "Disallow: /en/o/",
-          "Disallow: /api/",
-          "",
-          `Sitemap: ${url.origin}/sitemap.xml`,
-        ]
-      : ["User-agent: *", "Disallow: /"];
+      ? ["User-agent: *", "Allow: /", ...appPages, "", `Sitemap: ${url.origin}/sitemap.xml`]
+      : [...previews, "User-agent: *", "Disallow: /"];
   return new Response(`${lines.join("\n")}\n`, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 }
 

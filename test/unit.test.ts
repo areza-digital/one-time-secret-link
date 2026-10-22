@@ -162,3 +162,113 @@ describe("reading env files like sh does", () => {
     expect(() => readEnvValue(`${file}:MISSING`)).toThrow();
   });
 });
+
+describe("the CLI does not trust the server's answers", () => {
+  /** Runs the CLI against a fake instance on 127.0.0.1 (http is allowed only for localhost) in a throwaway home. */
+  async function againstServer(handler: (request: Request) => Response, args: string[], input = "", home?: string) {
+    const { mkdtempSync } = await import("node:fs");
+    const root = mkdtempSync(`${(await import("node:os")).tmpdir()}/vk-hostile-`);
+    const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: handler });
+    const base = `http://127.0.0.1:${server.port}`;
+    if (home) {
+      const { readdirSync, readFileSync, writeFileSync } = await import("node:fs");
+      for (const file of readdirSync(`${home}/sent`)) {
+        const record = JSON.parse(readFileSync(`${home}/sent/${file}`, "utf8"));
+        writeFileSync(`${home}/sent/${file}`, JSON.stringify({ ...record, base }));
+      }
+    }
+    try {
+      const proc = Bun.spawn(["bun", "--no-env-file", "--config=/dev/null", `${import.meta.dir}/../cli/vienkartine.ts`, ...args], {
+        env: { PATH: process.env.PATH ?? "", VIENKARTINE_URL: base, VIENKARTINE_HOME: home ?? `${root}/home/vk` },
+        stdin: new Blob([input]),
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+      return { code: await proc.exited, out, err, root };
+    } finally {
+      server.stop(true);
+    }
+  }
+
+  test("an item id that walks out of VIENKARTINE_HOME is refused before anything is written", async () => {
+    const { existsSync } = await import("node:fs");
+    const evil = () => Response.json({ id: "../../../escaped", expiresAt: Date.now() + 3_600_000, manageToken: "m".repeat(43) }, { status: 201 });
+    const request = await againstServer(evil, ["request", "probe"]);
+    expect(request.code).not.toBe(0);
+    expect(request.err).toContain("unexpected answer");
+    expect(existsSync(`${request.root}/escaped.json`)).toBe(false);
+    const send = await againstServer(evil, ["send", "--print"], "a secret");
+    expect(send.err).toContain("unexpected answer");
+    expect(send.code).not.toBe(0);
+    expect(existsSync(`${send.root}/escaped.json`)).toBe(false);
+  });
+
+  test("control characters in server strings never reach the terminal", async () => {
+    const { mkdirSync, mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const escapes = "\u001b]52;c;aHR0cHM6Ly9ldmlsLmV4YW1wbGU=\u0007\u001b[2J";
+    const id = "A".repeat(22);
+    const hostile = (request: Request) => {
+      const path = new URL(request.url).pathname;
+      if (path === "/api/items") return Response.json({ error: `nope${escapes}` }, { status: 418 });
+      if (path.endsWith("/revoke")) return Response.json({ state: `revoked${escapes}` });
+      return Response.json({ id, state: `open${escapes}`, filledAt: null, readAt: null });
+    };
+    const failed = await againstServer(hostile, ["request", "probe"]);
+    expect(failed.err).toContain("server said 418 ?");
+    expect(failed.out + failed.err).not.toContain("\u001b");
+    // status and revoke print the server's state for a link recorded as sent from this machine
+    for (const args of [["status"], ["revoke", id]]) {
+      const home = mkdtempSync(`${tmpdir()}/vk-seed-`);
+      mkdirSync(`${home}/sent`, { recursive: true });
+      writeFileSync(`${home}/sent/${id}.json`, JSON.stringify({ id, manageToken: "m".repeat(43), label: null, base: "", createdAt: 0, expiresAt: Date.now() + 3_600_000 }));
+      const run = await againstServer(hostile, args, "", home);
+      expect(run.code).toBe(0);
+      expect(run.out + run.err).not.toContain("\u001b");
+    }
+  });
+});
+
+describe("verify: the script scan", () => {
+  test("our own pages pass; scripts a browser would run from anywhere else are problems", async () => {
+    const { scanScripts } = await import("../scripts/scan-scripts");
+    const ours =
+      '<script src="/assets/theme-abc.js" integrity="sha384-x"></script><script type="module" src="/assets/app-abc.js" integrity="sha384-y"></script>' +
+      '<script type="application/ld+json">{"a":1}</script><script type="application/json" id="ui-copy">{"b":2}</script>';
+    expect(scanScripts(ours)).toEqual({
+      sources: [
+        { src: "/assets/theme-abc.js", integrity: "sha384-x" },
+        { src: "/assets/app-abc.js", integrity: "sha384-y" },
+      ],
+      problems: [],
+      inline: 0,
+    });
+    for (const tampered of [
+      '<SCRIPT src="/cdn-cgi/evil.js"></SCRIPT>', // HTML is case-insensitive
+      '<script SRC=/cdn-cgi/evil.js></script>', // bare value
+      "<script src='/cdn-cgi/evil.js'></script>", // single quotes
+      '<script/src="/cdn-cgi/evil.js"></script>', // slash as a separator
+      '<svg><script href="/cdn-cgi/evil.js"></script></svg>', // SVG script
+      '<svg><script xlink:href="/cdn-cgi/evil.js"></script></svg>',
+      '<script src="/assets/../cdn-cgi/evil.js"></script>', // path tricks
+      '<script src="https://cdn.example/app.js"></script>',
+    ]) {
+      expect(scanScripts(ours + tampered).problems.length).toBe(1);
+    }
+    expect(scanScripts('<script>alert(1)</script><script data-src="x">x()</script>')).toMatchObject({ problems: [], inline: 2 });
+  });
+});
+
+describe("product name", () => {
+  test("one name for both languages, or one per language", async () => {
+    const { coreCopy } = await import("../site/copy");
+    const config = { origin: "https://secret.example.com", repoUrl: "https://example.com/repo", contactEmail: "a@example.com" };
+    const single = coreCopy({ ...config, product: "Same" });
+    expect([single.lt.meta.title, single.en.meta.title]).toEqual(["Same: saugus slaptažodžių perdavimas", "Same: one-time links for passwords"]);
+    const split = coreCopy({ ...config, product: { lt: "Vienkartinė nuoroda", en: "Areza Secret" } });
+    expect(split.lt.nav.home).toBe("Vienkartinė nuoroda: pradžia");
+    expect(split.en.meta.title).toBe("Areza Secret: one-time links for passwords");
+    expect(split.en.footer.reportSubject).toBe("Areza Secret: abuse report");
+  });
+});

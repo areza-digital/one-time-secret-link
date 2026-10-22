@@ -20,7 +20,7 @@ if (!BASE) {
     [
       "bunx", "wrangler", "dev", "--local", "--ip", "127.0.0.1", "--port", String(port), "--persist-to", join(home, "state"),
       "--var", "IP_SALT:e2e-salt", "--var", `OPERATOR_TOKEN_SHA256:${createHash("sha256").update(OPERATOR_TOKEN).digest("hex")}`,
-      "--var", "VERIFIED_NAME:E2E Operator",
+      "--var", "VERIFIED_NAME:E2E Operator", "--var", "PREVIEW_BOTS:LinkedInBot, bad bot\nAllow: /",
     ],
     { cwd: join(import.meta.dir, ".."), stdout: "ignore", stderr: "ignore" },
   );
@@ -175,6 +175,13 @@ try {
   check("app page served with no-store + noindex", pageResponse.headers.get("cache-control") === "no-store" && (pageResponse.headers.get("x-robots-tag") ?? "").includes("noindex"));
   check("CSP forbids inline and third-party scripts", csp.includes("script-src 'self'") && !csp.includes("unsafe-inline"));
   check("referrer policy is no-referrer", pageResponse.headers.get("referrer-policy") === "no-referrer");
+  if (server) {
+    const robots = await (await fetch(`${BASE}/robots.txt`)).text();
+    const previewGroup = "User-agent: LinkedInBot\nAllow: /\nDisallow: /s/\nDisallow: /r/\nDisallow: /o/\nDisallow: /en/s/\nDisallow: /en/r/\nDisallow: /en/o/\nDisallow: /api/\n";
+    check("robots.txt lets the preview bot read landing pages only, everyone else nothing", robots === `${previewGroup}\nUser-agent: *\nDisallow: /\n`, JSON.stringify(robots));
+    const home = await fetch(`${BASE}/en`);
+    check("landing page still says noindex", (home.headers.get("x-robots-tag") ?? "").includes("noindex") && (await home.text()).includes('<meta name="robots" content="noindex, nofollow">'));
+  }
   const getDoesNotBurn = await call(`/api/items/${anonSend.data.id}`);
   check("viewing the page does not burn the secret", getDoesNotBurn.data.state === "open");
 
@@ -189,6 +196,13 @@ try {
   check("operator token bypasses the IP limit", ownerStill.code === 0, ownerStill.err);
   const anonCli = cli(["request", "anon via cli"], undefined, anonymous);
   check("anonymous CLI is limited too", anonCli.code === 6, anonCli.err);
+
+  // 7. `bun run verify` accepts an honest instance built from this checkout (all page kinds).
+  if (server) {
+    const verify = Bun.spawnSync(["bun", "run", join(import.meta.dir, "verify.ts"), BASE]);
+    const out = verify.stdout.toString();
+    check("verify passes on every page kind of this build", verify.exitCode === 0 && (out.match(/^ok {4}\/\S*: CSP/gm) ?? []).length === 8, out.split("\n").filter((line) => line.startsWith("FAIL")).join("; "));
+  }
 } finally {
   server?.kill();
   rmSync(home, { recursive: true, force: true });

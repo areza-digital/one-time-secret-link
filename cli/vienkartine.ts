@@ -11,6 +11,7 @@ import { decryptText, encryptText, isIdentity, newIdentity } from "../src/shared
 import {
   ID_PATTERN,
   LIMITS,
+  TOKEN_PATTERN,
   authFromIdentity,
   cleanLabel,
   linkFor,
@@ -19,7 +20,8 @@ import {
 } from "../src/shared/protocol";
 
 const HOME = process.env.VIENKARTINE_HOME ?? join(homedir(), ".config/vienkartine");
-const BASE = (process.env.VIENKARTINE_URL ?? "https://vienkartine.lt").replace(/\/$/, "");
+// The live Areza instance. The default must always be a domain the project controls: secrets go wherever it points.
+const BASE = (process.env.VIENKARTINE_URL ?? "https://secret.areza.digital").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE).origin;
 const LOCAL_BASE = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE_ORIGIN);
 const NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -184,8 +186,22 @@ async function api<T>(base: string, path: string, body?: unknown, extra: Record<
   return { status: response.status, data };
 }
 
+/** The answer to a create call. The id becomes a file name under VIENKARTINE_HOME, so a hostile server must not pick it. */
+function created<T extends { id: string; expiresAt: number; manageToken?: string }>(status: number, data: T, send = false): T {
+  if (status !== 201) throw apiError(status, data);
+  const valid =
+    ID_PATTERN.test(String(data.id)) && Number.isSafeInteger(data.expiresAt) && (!send || TOKEN_PATTERN.test(String(data.manageToken)));
+  if (!valid) throw new CliError(`unexpected answer from ${BASE}; nothing was saved`);
+  return data;
+}
+
+/** An error code or state from the server, printed only if it is a plain word: no terminal escapes from a hostile server. */
+function word(value: unknown): string {
+  return typeof value === "string" && /^[a-z_]{1,32}$/.test(value) ? value : "?";
+}
+
 function apiError(status: number, data: unknown): CliError {
-  const code = (data as { error?: string })?.error ?? "error";
+  const code = word((data as { error?: string })?.error ?? "error");
   if (status === 404) return new CliError("not found or expired", 3);
   if (status === 403) return new CliError("the key does not match this item", 4);
   if (status === 409) return new CliError("already used (read, answered or revoked)", 5);
@@ -290,14 +306,14 @@ async function request(args: ReturnType<typeof parseArgs>): Promise<void> {
 
   const { identity, recipient } = await newIdentity();
   const auth = await authFromIdentity(identity);
-  const { status, data } = await api<{ id: string; expiresAt: number }>(BASE, "/api/items", {
+  const answer = await api<{ id: string; expiresAt: number }>(BASE, "/api/items", {
     kind: "request",
     recipient,
     label,
     ttl,
     auth,
   });
-  if (status !== 201) throw apiError(status, data);
+  const data = created(answer.status, answer.data);
 
   const saved: SavedRequest = {
     id: data.id,
@@ -334,13 +350,13 @@ async function send(args: ReturnType<typeof parseArgs>): Promise<void> {
   const lang = parseLang(flag(args.flags, "lang"));
   const { identity, recipient } = await newIdentity();
   const ciphertext = await encryptText(value, recipient);
-  const { status, data } = await api<{ id: string; expiresAt: number; manageToken: string }>(BASE, "/api/items", {
+  const answer = await api<{ id: string; expiresAt: number; manageToken: string }>(BASE, "/api/items", {
     kind: "send",
     ciphertext,
     ttl,
     auth: await authFromIdentity(identity),
   });
-  if (status !== 201) throw apiError(status, data);
+  const data = created(answer.status, answer.data, true);
   const saved: SavedSend = {
     id: data.id,
     manageToken: data.manageToken,
@@ -454,7 +470,7 @@ async function status(args: ReturnType<typeof parseArgs>): Promise<void> {
       const { status: code, data } = await api<PublicItem>(saved.base, `/api/items/${saved.id}`);
       const state =
         code === 200
-          ? `${data.state}${data.filledAt ? ` filled ${new Date(data.filledAt).toISOString()}` : ""}${data.readAt ? ` read ${new Date(data.readAt).toISOString()}` : ""}`
+          ? `${word(data.state)}${data.filledAt ? ` filled ${new Date(data.filledAt).toISOString()}` : ""}${data.readAt ? ` read ${new Date(data.readAt).toISOString()}` : ""}`
           : "gone";
       const label = "label" in saved && saved.label ? saved.label : "";
       rows.push(`${saved.id}  ${kind === "requests" ? "request" : "send   "}  ${state.padEnd(10)}  ${label}`);
@@ -488,7 +504,7 @@ async function revoke(args: ReturnType<typeof parseArgs>): Promise<void> {
   if (code !== 200) throw apiError(code, data);
   rmSync(requestPath, { force: true });
   rmSync(sentPath, { force: true });
-  console.log(data.state === "read" ? `${id}: it was already read before you revoked it; rotate that credential` : `${id}: ${data.state}`);
+  console.log(data.state === "read" ? `${id}: it was already read before you revoked it; rotate that credential` : `${id}: ${word(data.state)}`);
 }
 
 /** Puts NAME=value from a local env file into a remote env file over ssh. The value travels on stdin only. */
@@ -544,7 +560,7 @@ const HELP = `vienkartine: share secrets through ${BASE} without printing them
   vienkartine push --from FILE --env NAME --ssh HOST --remote PATH
       Copy one variable into a remote env file over ssh (stdin only, one 0600 .vienkartine.bak kept).
 
-Env: VIENKARTINE_URL (default https://vienkartine.lt), VIENKARTINE_HOME, VIENKARTINE_OPERATOR_TOKEN + VIENKARTINE_OPERATOR_URL.
+Env: VIENKARTINE_URL (default https://secret.areza.digital), VIENKARTINE_HOME, VIENKARTINE_OPERATOR_TOKEN + VIENKARTINE_OPERATOR_URL.
 Exit codes: 2 not filled yet, 3 not found, 4 wrong key, 5 already used, 6 rate limited, 7 not saved as asked.`;
 
 async function main(): Promise<void> {

@@ -10,7 +10,7 @@ import { LIMITS, TTL_CHOICES, reservedWords, type Lang } from "../src/shared/pro
 import { CSP } from "../src/worker/csp";
 import { coreCopy, type Copy } from "./copy";
 import { button, esc } from "./html";
-import { loadTheme, type GlyphName, type IconName, type Theme } from "./theme";
+import { loadTheme, productName, type GlyphName, type IconName, type Theme } from "./theme";
 
 const ROOT = join(import.meta.dir, "..");
 const LANGS: Lang[] = ["lt", "en"];
@@ -132,7 +132,7 @@ function head(ctx: Ctx, lang: Lang, kind: PageKind, title: string, description: 
     kind === "home"
       ? [
           `<meta property="og:type" content="website">`,
-          `<meta property="og:site_name" content="${esc(theme.config.product)}">`,
+          `<meta property="og:site_name" content="${esc(productName(theme.config, lang))}">`,
           `<meta property="og:locale" content="${c.ogLocale}">`,
           `<meta property="og:title" content="${esc(title)}">`,
           `<meta property="og:description" content="${esc(description)}">`,
@@ -183,7 +183,7 @@ function header(ctx: Ctx, lang: Lang, kind: PageKind): string {
   const a = ANCHORS[lang];
   const nav =
     kind === "home"
-      ? `<nav class="header-nav" aria-label="${esc(theme.config.product)}">
+      ? `<nav class="header-nav" aria-label="${esc(productName(theme.config, lang))}">
   <a href="#${a.how}">${c.nav.how}</a>
   <a href="#${a.request}">${c.nav.request}</a>
   <a href="#${a.security}">${c.nav.security}</a>
@@ -201,7 +201,7 @@ function header(ctx: Ctx, lang: Lang, kind: PageKind): string {
   return `<a class="skip-link" href="#main">${c.nav.skip}</a>
 <header class="site-header">
   <div class="site-container header-inner">
-    <a class="brand" href="${home(lang)}" aria-label="${esc(c.nav.home)}">${theme.logo()}<span class="brand-name">${esc(theme.config.product)}</span></a>
+    <a class="brand" href="${home(lang)}" aria-label="${esc(c.nav.home)}">${theme.logo()}<span class="brand-name">${esc(productName(theme.config, lang))}</span></a>
     ${nav}
     <div class="header-actions">
       <a class="lang-switch" href="${switchHref}" hreflang="${other}" lang="${other}" data-lang-switch="${other}" aria-label="${c.nav.language}: ${other.toUpperCase()}"><span class="lang-current">${lang.toUpperCase()}</span><span class="lang-sep">/</span><span>${other.toUpperCase()}</span></a>
@@ -458,7 +458,7 @@ function structuredData(ctx: Ctx, lang: Lang): string {
     {
       "@type": "WebApplication",
       "@id": `${url}#app`,
-      name: config.product,
+      name: productName(config, lang),
       url,
       description: c.meta.description,
       applicationCategory: "SecurityApplication",
@@ -503,7 +503,7 @@ function validateJsonLd(html: string, page: string): void {
 
 function page(ctx: Ctx, lang: Lang, kind: PageKind): string {
   const c = ctx.copy[lang];
-  const product = ctx.theme.config.product;
+  const product = productName(ctx.theme.config, lang);
   const title = kind === "home" ? c.meta.title : kind === "404" ? `${c.notFound.title} | ${product}` : `${c.appMeta[kind]} | ${product}`;
   const main = kind === "home" ? homeMain(ctx, lang) : kind === "404" ? notFoundMain(ctx, lang) : appMain(ctx, lang, kind);
   return `${head(ctx, lang, kind, title, c.meta.description)}
@@ -592,7 +592,7 @@ ${["/", "/en"]
   );
   write(
     "llms.txt",
-    `# ${theme.config.product}
+    `# ${productName(theme.config, "en")}
 
 > Free, open-source tool for sharing passwords and API keys with one-time links and request links. Text is encrypted in the browser with age (post-quantum hybrid keys, ML-KEM-768 + X25519); the server stores only ciphertext and deletes it on first read or at expiry (1 hour to 7 days).
 
