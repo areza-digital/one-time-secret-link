@@ -20,7 +20,8 @@ import {
 } from "../src/shared/protocol";
 
 const HOME = process.env.VIENKARTINE_HOME ?? join(homedir(), ".config/vienkartine");
-const BASE = (process.env.VIENKARTINE_URL ?? "https://vienkartine.lt").replace(/\/$/, "");
+// The live Areza instance. The default must always be a domain the project controls: secrets go wherever it points.
+const BASE = (process.env.VIENKARTINE_URL ?? "https://secret.areza.digital").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE).origin;
 const LOCAL_BASE = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE_ORIGIN);
 const NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -559,7 +560,7 @@ const HELP = `vienkartine: share secrets through ${BASE} without printing them
   vienkartine push --from FILE --env NAME --ssh HOST --remote PATH
       Copy one variable into a remote env file over ssh (stdin only, one 0600 .vienkartine.bak kept).
 
-Env: VIENKARTINE_URL (default https://vienkartine.lt), VIENKARTINE_HOME, VIENKARTINE_OPERATOR_TOKEN + VIENKARTINE_OPERATOR_URL.
+Env: VIENKARTINE_URL (default https://secret.areza.digital), VIENKARTINE_HOME, VIENKARTINE_OPERATOR_TOKEN + VIENKARTINE_OPERATOR_URL.
 Exit codes: 2 not filled yet, 3 not found, 4 wrong key, 5 already used, 6 rate limited, 7 not saved as asked.`;
 
 async function main(): Promise<void> {

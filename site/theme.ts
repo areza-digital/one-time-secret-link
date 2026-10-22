@@ -26,7 +26,7 @@ export type IconName =
 export type GlyphName = "check" | "cross" | "plus" | "theme" | "chevron";
 
 export interface SiteConfig {
-  /** Canonical origin without a trailing slash, e.g. https://vienkartine.lt */
+  /** Canonical origin without a trailing slash, e.g. https://secret.example.com */
   origin: string;
   /** Product name shown in the header, titles and footer. */
   product: string;

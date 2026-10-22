@@ -40,8 +40,8 @@ In scope:
 - The code in this repository: the Worker (`src/worker/`), the browser code (`src/web/`), the shared protocol and
   cryptography wrapper (`src/shared/`), the site generator (`site/`), the default theme, the CLI (`cli/`) and the
   scripts.
-- The deployment of the hosted instance at https://vienkartine.lt (and https://secret.areza.digital while it is
-  live): its configuration, response headers and behavior of the code it runs.
+- The deployment of the hosted instance at https://secret.areza.digital: its configuration, response headers and
+  behavior of the code it runs.
 - Documentation that misstates a security property.
 
 Out of scope:

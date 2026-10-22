@@ -15,7 +15,7 @@ The default theme, in light and dark mode:
 |---|---|
 | ![Default theme, light](docs/screenshots/default-light.png) | ![Default theme, dark](docs/screenshots/default-dark.png) |
 
-**Hosted instance:** https://vienkartine.lt (launching; until then https://secret.areza.digital), run by Areza Digital
+**Hosted instance:** https://secret.areza.digital, run by Areza Digital
 (AI Merge Studio Ltd). It is free to use. You can also run your own: see [Quick start](#quick-start).
 
 The pages are in Lithuanian and English (English under `/en`).
@@ -107,7 +107,7 @@ The internal code review and penetration test run before release, and the status
 
 ### Use the hosted instance
 
-Open https://vienkartine.lt (or https://secret.areza.digital until it is live). The CLI below talks to it by default.
+Open https://secret.areza.digital. The CLI below talks to it by default.
 
 ### Self-host on Cloudflare
 
@@ -188,7 +188,7 @@ Environment:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `VIENKARTINE_URL` | `https://vienkartine.lt` | Instance to use |
+| `VIENKARTINE_URL` | `https://secret.areza.digital` | Instance to use |
 | `VIENKARTINE_HOME` | `~/.config/vienkartine` | Local state |
 | `VIENKARTINE_OPERATOR_TOKEN`, `VIENKARTINE_OPERATOR_URL` | none | Operator token and the instance it belongs to. Can also live in `VIENKARTINE_HOME/operator.env`. The token is sent only to that URL. |
 
@@ -213,7 +213,7 @@ that an instance serves the JavaScript of that commit:
 git clone https://github.com/areza-digital/vienkartine && cd vienkartine
 git checkout <commit from the footer>
 bun install
-bun run verify https://vienkartine.lt
+bun run verify https://secret.areza.digital
 ```
 
 The script rebuilds the JavaScript and compares it byte for byte with what the site serves, checks the Subresource

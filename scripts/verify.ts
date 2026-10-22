@@ -1,5 +1,5 @@
 // Checks that a running instance serves the JavaScript built from this repository.
-// Usage: bun run verify https://vienkartine.lt
+// Usage: bun run verify https://secret.areza.digital
 //
 // The page names the commit it was built from (<meta name="vk-commit">). Check out that commit, then run this:
 // it rebuilds the JS here and compares it byte for byte with what the site serves, checks the Subresource
@@ -15,7 +15,7 @@ import { join } from "node:path";
 const ROOT = join(import.meta.dir, "..");
 const target = (process.argv[2] ?? "").replace(/\/$/, "");
 if (!/^https?:\/\//.test(target)) {
-  console.error("usage: bun run verify https://vienkartine.lt");
+  console.error("usage: bun run verify https://secret.areza.digital");
   process.exit(1);
 }
 
