@@ -2,6 +2,14 @@
 
 All notable changes to this project are listed here. The project follows [semantic versioning](https://semver.org).
 
+## 0.3.2 (2026-10-22)
+
+### Fixed
+
+- The `publicSource` build test took `VK_THEME` from the environment. Deploy scripts that export `VK_THEME` before
+  `bun test` (as the hosted instance's does) failed there with a theme that sets `publicSource: false`. The test now
+  builds with a clean environment. No change to the site.
+
 ## 0.3.1 (2026-10-22)
 
 ### Added
