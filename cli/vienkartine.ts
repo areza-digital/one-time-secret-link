@@ -18,7 +18,7 @@ import {
   type Lang,
   type PublicItem,
 } from "../src/shared/protocol";
-import { STAT_KINDS, STATS_DAYS } from "../src/worker/stats";
+import { STAT_KINDS, STATS_DAYS } from "../src/shared/stats";
 
 const HOME = process.env.VIENKARTINE_HOME ?? join(homedir(), ".config/vienkartine");
 // The live Areza instance. The default must always be a domain the project controls: secrets go wherever it points.

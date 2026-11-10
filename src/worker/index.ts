@@ -16,11 +16,12 @@ import {
   sha256Hex,
   type PublicItem,
 } from "../shared/protocol";
+import { STATS_DAYS, type StatKind } from "../shared/stats";
 import type { SecretBox, StoredItem } from "./box";
 import { CSP } from "./csp";
 import { ipBucket } from "./ip";
 import type { RateLimiter } from "./limiter";
-import { STATS_DAYS, STATS_OBJECT, type StatKind } from "./stats";
+import { STATS_OBJECT } from "./stats";
 
 export { SecretBox } from "./box";
 export { RateLimiter } from "./limiter";

@@ -1,11 +1,8 @@
 // Daily totals: how many one-time links and requests were created, requests filled and links opened, per UTC day.
 // A counter is a day, a kind and a number. Nothing else ever reaches this file: no address, hash, id, label or header.
 
-export const STAT_KINDS = ["send", "request", "fill", "open"] as const;
-export type StatKind = (typeof STAT_KINDS)[number];
+import { STAT_KINDS, STATS_DAYS, type StatKind } from "../shared/stats";
 
-/** Days of history kept, today included. Older counters are deleted. */
-export const STATS_DAYS = 400;
 /** The RateLimiter object that holds the totals (the other objects are named after a hashed address, or "global"). */
 export const STATS_OBJECT = "stats";
 

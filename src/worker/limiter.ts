@@ -2,7 +2,8 @@
 // "stats" object that holds the daily totals (stats.ts), so that no new binding or migration is needed.
 
 import { DurableObject } from "cloudflare:workers";
-import { addCount, readTotals, type DayTotals, type StatKind } from "./stats";
+import type { StatKind } from "../shared/stats";
+import { addCount, readTotals, type DayTotals } from "./stats";
 
 const CLEANUP_MS = 60 * 60 * 1000;
 

@@ -74,6 +74,10 @@ a successful action, without making the visitor wait, and gives the counter the 
 id, label or header. A record is a day, a kind and a number. The operator reads them with `GET /api/stats` or
 `vienkartine stats`; without the operator token the route answers 404, like an unknown path.
 
+What is stored is a day, a kind and a number, but the operator can still infer timing: by reading the totals repeatedly,
+or from the platform's storage history. That is within what the operator already knows (item records hold created and
+opened times), and nobody without the operator token can read the totals.
+
 Never sent to the server: the plaintext, the identity, and the URL fragment.
 
 Logging: Workers Logs are off in the shipped `wrangler.jsonc` (`observability.enabled` is `false`). An operator who turns

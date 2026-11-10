@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, mock, setSystemTime, spyOn, test } from "bun:test";
 import { createHash, timingSafeEqual } from "node:crypto";
-import { STATS_DAYS, addCount, readTotals, type CounterStore, type StatKind } from "../src/worker/stats";
+import { STATS_DAYS, type StatKind } from "../src/shared/stats";
+import { addCount, readTotals, type CounterStore } from "../src/worker/stats";
 
 // The Worker imports its Durable Object classes from a module that exists only in the Workers runtime, and checks the
 // operator token with a WebCrypto method that only the Workers runtime has.
@@ -117,6 +118,16 @@ describe("daily totals", () => {
 
     await call("/api/items", SEND);
     expect(data.get(`${today}|send`)).toBe(2);
+  });
+
+  test("after a reject the next answer, and its opening, are counted again", async () => {
+    const { data, call } = setup();
+    await call(`/api/items/${GOOD}/fill`, { ciphertext: ARMOR });
+    await call(`/api/items/${GOOD}/open`, { auth: AUTH });
+    expect((await call(`/api/items/${GOOD}/reopen`, { auth: AUTH })).status).toBe(200);
+    await call(`/api/items/${GOOD}/fill`, { ciphertext: ARMOR });
+    await call(`/api/items/${GOOD}/open`, { auth: AUTH });
+    expect(Object.fromEntries(data)).toEqual({ [`${today}|fill`]: 2, [`${today}|open`]: 2 });
   });
 
   test("a failed counter write never fails the action", async () => {
@@ -294,8 +305,8 @@ describe("the page says so", () => {
     expect(await build.exited).toBe(0);
     const lt = readFileSync(`${out}/index.html`, "utf8");
     const en = readFileSync(`${out}/en/index.html`, "utf8");
-    expect(lt).toContain("Taip pat kasdien skaičiuojame, kiek nuorodų sukuriama ir atidaroma: saugome tik bendrus skaičius, be jokio adreso ar kito identifikatoriaus.");
-    expect(en).toContain("We also count how many links are created and opened each day, as plain totals without any address or other identifier.");
+    expect(lt).toContain("Taip pat kasdien skaičiuojame, kiek nuorodų sukuriama, užpildoma ir atidaroma: saugome tik bendrus skaičius, be jokio adreso ar kito identifikatoriaus.");
+    expect(en).toContain("We also count how many links are created, answered and opened each day, as plain totals without any address or other identifier.");
     // The statements it must not contradict are still there.
     expect(lt).toContain("Be registracijos, slapukų ir sekimo");
     expect(en).toContain("No sign-up, no cookies, no tracking");

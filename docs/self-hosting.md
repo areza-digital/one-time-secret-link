@@ -197,8 +197,8 @@ The Worker keeps one number per UTC day and kind, so you can see whether anyone 
 |---|---|
 | `send` | a one-time link was created |
 | `request` | a request link was created |
-| `fill` | a request was answered (the first answer only) |
-| `open` | a secret was handed out, once: a one-time link opened, or the answer to a request read |
+| `fill` | a request was answered: each accepted answer, so after `vienkartine reject` the next answer counts again |
+| `open` | a secret was handed out: a one-time link opened, or an answer to a request read (once per answer) |
 
 - A counter is a day, a kind and a number. There is no IP address or hash of one, no item id, no label, no user agent
   or referrer, and no row per request. Refused actions (wrong key, already used, rate limited) are not counted.
@@ -216,9 +216,9 @@ The Worker keeps one number per UTC day and kind, so you can see whether anyone 
 
   Without the token the route answers `404 {"error":"not_found"}`, like any path that does not exist. There is no public
   statistics page. Someone with access to your Cloudflare account can read the same numbers in the Durable Object data.
-- The home page's answer to "What do you store about me?" says that the service counts how many links are created and
-  opened each day, as totals without any address or identifier. If a theme overrides that answer, keep that sentence:
-  it is true of every instance that runs this code.
+- The home page's answer to "What do you store about me?" says that the service counts how many links are created,
+  answered and opened each day, as totals without any address or identifier. If a theme overrides that answer, keep
+  that sentence: it is true of every instance that runs this code.
 
 ## Theming your instance
 

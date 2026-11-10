@@ -12,7 +12,7 @@ All notable changes to this project are listed here. The project follows [semant
   and a failed count never fails the request. The operator reads them with `vienkartine stats [--days N]` or
   `GET /api/stats` (operator token; everyone else gets the 404 of an unknown path).
 - The answer to "What do you store about me?" on both landing pages now says that the service counts how many links
-  are created and opened each day, as totals without any address or identifier. A theme that overrides that answer
+  are created, answered and opened each day, as totals without any address or identifier. A theme that overrides that answer
   should keep the sentence.
 
 ## 0.3.2 (2026-10-22)
