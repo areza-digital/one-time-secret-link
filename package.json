@@ -28,7 +28,7 @@
   "description": "One-time and request links for passwords and API keys, encrypted in the browser with age. Cloudflare Workers + Durable Objects.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/areza-digital/vienkartine"
+    "url": "https://github.com/areza-digital/one-time-secret-link"
   },
   "bin": {
     "vienkartine": "cli/vienkartine.ts"

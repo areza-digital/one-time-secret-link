@@ -13,8 +13,8 @@ You need [Bun](https://bun.sh) 1.4.2, the version pinned in `package.json`. The 
 depend on it, so use that version rather than the latest one.
 
 ```bash
-git clone https://github.com/areza-digital/vienkartine
-cd vienkartine
+git clone https://github.com/areza-digital/one-time-secret-link
+cd one-time-secret-link
 bun install
 cp .dev.vars.example .dev.vars    # set IP_SALT, for example from: openssl rand -base64 32
 bun run dev                       # build + wrangler dev on http://127.0.0.1:8787

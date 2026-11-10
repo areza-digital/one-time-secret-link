@@ -28,7 +28,7 @@ For the Deploy button route, set them as build variables.
 | `VK_THEME` | `themes/default` | Directory of a theme whose `theme.ts` default-exports a `Theme`. See [theming.md](theming.md) |
 | `VK_ORIGIN` | `https://example.com` | Canonical origin of the instance, no trailing slash. Used in canonical and hreflang links, Open Graph tags, the sitemap, `llms.txt` and the JSON-LD |
 | `VK_PRODUCT` | `Vienkartinė nuoroda` | Product name in the header, titles and footer |
-| `VK_REPO` | `https://github.com/areza-digital/vienkartine` | Public source repository, linked from the footer together with the commit. Set it to your fork if you deploy your own commits |
+| `VK_REPO` | `https://github.com/areza-digital/one-time-secret-link` | Public source repository, linked from the footer together with the commit. Set it to your fork if you deploy your own commits |
 | `VK_CONTACT` | `abuse@example.com` | Contact address shown in the footer and FAQ. Abuse reports go here |
 | `VK_WRANGLER_CONFIG` | `wrangler.jsonc` | Worker config whose `vars` (`INDEXABLE`, `RESERVED_LABEL_WORDS`) the pages follow |
 | `VK_OUT` | `dist` | Output directory. `wrangler.jsonc` serves `dist`, so change both or neither |
@@ -81,7 +81,7 @@ Defined in `wrangler.jsonc`:
 
 ## Route A: Deploy to Cloudflare button
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/areza-digital/vienkartine)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/areza-digital/one-time-secret-link)
 
 1. Follow the flow. It creates a copy of the repository in your Git account and a Worker connected to it, and prompts
    for the secrets listed in `.dev.vars.example`. Enter an `IP_SALT` from `openssl rand -base64 32`. Leave
@@ -98,8 +98,8 @@ Defined in `wrangler.jsonc`:
 ## Route B: manual
 
 ```bash
-git clone https://github.com/areza-digital/vienkartine
-cd vienkartine
+git clone https://github.com/areza-digital/one-time-secret-link
+cd one-time-secret-link
 git checkout <release commit>      # optional: deploy a commit you have looked at
 bun install
 ```

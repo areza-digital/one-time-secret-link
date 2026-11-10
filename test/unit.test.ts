@@ -293,7 +293,7 @@ describe("publicSource", () => {
     const read = (dir: string) => files.map((file) => readFileSync(`${root}/${dir}/${file}`, "utf8")).join("\n");
     const open = read("open");
     const closed = read("closed");
-    const claims = [/github\.com\/areza-digital\/vienkartine/i, /source code|šaltinio kodas/i, /open.source|atvir(as|o) kod/i, /opensource\.org/, /bun run verify/];
+    const claims = [/github\.com\/areza-digital\/one-time-secret-link/i, /source code|šaltinio kodas/i, /open.source|atvir(as|o) kod/i, /opensource\.org/, /bun run verify/];
     for (const claim of claims) {
       expect(open).toMatch(claim);
       expect(closed).not.toMatch(claim);

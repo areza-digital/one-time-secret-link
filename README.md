@@ -1,10 +1,11 @@
-# Areza Secret
+# Areza Secret: one-time secret links
 
-[![CI](https://github.com/areza-digital/vienkartine/actions/workflows/ci.yml/badge.svg)](https://github.com/areza-digital/vienkartine/actions/workflows/ci.yml)
+[![CI](https://github.com/areza-digital/one-time-secret-link/actions/workflows/ci.yml/badge.svg)](https://github.com/areza-digital/one-time-secret-link/actions/workflows/ci.yml)
 
 Areza Secret is a small web app and command-line tool for handing over a password or an API key without leaving it in
 an inbox or a chat log. On the Lithuanian pages of the hosted instance it is called **Vienkartinė nuoroda** ("one-time
-link"), which is where the repository, the CLI (`vienkartine`) and its `VIENKARTINE_*` variables get their name.
+link"), which is where the CLI (`vienkartine`) and its `VIENKARTINE_*` variables get their name. The repository was
+called `vienkartine` until November 2026; old links redirect.
 
 The text is encrypted in the browser with [age](https://age-encryption.org) using post-quantum hybrid keys
 (ML-KEM-768 + X25519). The server stores only ciphertext and deletes it on the first read or at expiry (1 hour to
@@ -123,7 +124,7 @@ Open https://secret.areza.digital. The CLI below talks to it by default.
 
 ### Self-host on Cloudflare
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/areza-digital/vienkartine)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/areza-digital/one-time-secret-link)
 
 The button flow prompts for the secrets listed in `.dev.vars.example`. Afterwards set the instance's name, domain and
 contact address, add a custom domain and adjust a few Cloudflare zone settings. Do this before you point people at
@@ -132,7 +133,7 @@ it. The step-by-step guide, including the manual route with `wrangler`, is [docs
 The manual route in short (needs [Bun](https://bun.sh) 1.4.2 and a Cloudflare account):
 
 ```bash
-git clone https://github.com/areza-digital/vienkartine && cd vienkartine
+git clone https://github.com/areza-digital/one-time-secret-link && cd one-time-secret-link
 bun install
 bunx wrangler login
 VK_ORIGIN=https://secret.example.com VK_PRODUCT="Our secrets" VK_CONTACT=abuse@example.com bun run deploy
@@ -223,7 +224,7 @@ Every page carries `<meta name="vk-version">` and `<meta name="vk-commit">`, and
 that an instance serves the JavaScript of that commit:
 
 ```bash
-git clone https://github.com/areza-digital/vienkartine && cd vienkartine
+git clone https://github.com/areza-digital/one-time-secret-link && cd one-time-secret-link
 git checkout <commit from the footer>
 bun install
 bun run verify https://secret.areza.digital

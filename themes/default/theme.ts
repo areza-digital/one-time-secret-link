@@ -53,7 +53,7 @@ const theme: Theme = {
   config: {
     origin: (env.VK_ORIGIN ?? "https://example.com").replace(/\/$/, ""),
     product: env.VK_PRODUCT ?? "Vienkartinė nuoroda",
-    repoUrl: env.VK_REPO ?? "https://github.com/areza-digital/vienkartine",
+    repoUrl: env.VK_REPO ?? "https://github.com/areza-digital/one-time-secret-link",
     contactEmail: env.VK_CONTACT ?? "abuse@example.com",
   },
   stylesheet: join(import.meta.dir, "theme.css"),
