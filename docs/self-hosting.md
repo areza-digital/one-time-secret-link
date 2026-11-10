@@ -72,7 +72,8 @@ Defined in `wrangler.jsonc`:
   (also under `/en/`), `/_app/*` and `/robots.txt`. Everything else is served by Workers static assets with the
   security headers from the generated `dist/_headers`.
 - `BOXES` (class `SecretBox`) and `LIMITS` (class `RateLimiter`): the Durable Objects. The migration `v1` creates both
-  as SQLite-backed classes. Do not edit existing migration entries.
+  as SQLite-backed classes. Do not edit existing migration entries. `LIMITS` also holds the [daily totals](#daily-totals)
+  in one object named `stats`, so they need no extra binding and no migration.
 - `ratelimits`: four Workers Rate Limiting bindings, `RL_CREATE` (6 per minute), `RL_FILL` (10), `RL_OPEN` (20) and
   `RL_READ` (60), counted per IP key in memory and checked before any Durable Object is called. Their `namespace_id`
   values (`"7101"` to `"7104"`) must be unique within your Cloudflare account; two bindings with the same id, even in
@@ -166,7 +167,8 @@ An optional token that makes you the "verified" operator. Requests carrying it:
   that skip the anonymous label filter;
 - skip the per-IP limits and the global cap;
 - can take down any item (`vienkartine revoke <id> --admin`), which then shows visitors a "removed after an abuse
-  report" message.
+  report" message;
+- can read the [daily totals](#daily-totals) (`vienkartine stats`).
 
 The token cannot open or decrypt anything. The browser pages never send it; you use it with the CLI or any HTTP client
 (`Authorization: Bearer <token>`).
@@ -186,6 +188,37 @@ unset token
 (On Linux use `sha256sum` instead of `shasum -a 256`.) The token is 43 URL-safe characters. The CLI sends it only to
 the URL stored next to it. Keep a copy in a password manager. To rotate, repeat the steps; the old token stops working
 when the new hash is set.
+
+## Daily totals
+
+The Worker keeps one number per UTC day and kind, so you can see whether anyone uses the instance:
+
+| Kind | Counted when |
+|---|---|
+| `send` | a one-time link was created |
+| `request` | a request link was created |
+| `fill` | a request was answered (the first answer only) |
+| `open` | a secret was handed out, once: a one-time link opened, or the answer to a request read |
+
+- A counter is a day, a kind and a number. There is no IP address or hash of one, no item id, no label, no user agent
+  or referrer, and no row per request. Refused actions (wrong key, already used, rate limited) are not counted.
+- They live in the `RateLimiter` Durable Object class, in the one object named `stats`. The objects that hold hashed
+  addresses are not touched, and nothing is added to `wrangler.jsonc`.
+- 400 days are kept, today included. When a kind gets its first count of a day, counters older than that are deleted.
+- Nothing waits for the count: the response does not, and if the write fails the request still succeeds and that day's
+  number is one short. Each successful create, answer and read adds one Durable Object request for it.
+- Read them with the operator token: `vienkartine stats [--days 30]` prints a table, and `GET /api/stats?days=30` with
+  `Authorization: Bearer <token>` returns JSON, newest day first, with zeros for quiet days (1 to 400 days):
+
+  ```json
+  { "retentionDays": 400, "days": [{ "day": "2026-11-10", "send": 3, "request": 1, "fill": 1, "open": 2 }] }
+  ```
+
+  Without the token the route answers `404 {"error":"not_found"}`, like any path that does not exist. There is no public
+  statistics page. Someone with access to your Cloudflare account can read the same numbers in the Durable Object data.
+- The home page's answer to "What do you store about me?" says that the service counts how many links are created and
+  opened each day, as totals without any address or identifier. If a theme overrides that answer, keep that sentence:
+  it is true of every instance that runs this code.
 
 ## Theming your instance
 

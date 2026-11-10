@@ -21,6 +21,7 @@ Contents: [Assets](#assets) · [Actors](#actors) · [What the server stores and 
 | Operator token | The operator's machine; the server stores only its SHA-256 (`OPERATOR_TOKEN_SHA256`) | Operator |
 | Request label and recipient (public) key | Server; returned to anyone who knows the item id | Public by design |
 | Item state and times (open, filled, read, revoked, removed; created, filled, read) | Server; returned to anyone who knows the item id | Public by design |
+| Daily totals: per UTC day, how many one-time links and requests were created, requests filled and links opened | Server (`RateLimiter` object `stats`); no identifiers | The operator, with the operator token |
 | The JavaScript the page runs | Served by the deployment | Whoever controls the deployment (see [Known limits](#known-limits)) |
 | What the page tells the user: labels, the "Verified" badge, "opened at" receipts | Rendered from server data | Must not be spoofable by an anonymous user |
 | Availability | Cloudflare quotas and the rate limits | Everyone |
@@ -66,6 +67,12 @@ Rate limiting (`src/worker/limiter.ts`, `src/worker/ip.ts`): one Durable Object 
 removed by an alarm after their window ends. One more object, `global`, counts anonymous creates per hour. The hash is
 pseudonymous, not anonymous: whoever holds `IP_SALT` can recompute it for a known address. Raw IP addresses are not
 stored.
+
+Daily totals (`src/worker/stats.ts`, in the `RateLimiter` object named `stats`): one number per UTC day and per kind of
+action (one-time link created, request created, request filled, secret opened), 400 days kept. The Worker adds one after
+a successful action, without making the visitor wait, and gives the counter the kind and nothing else: no address, hash,
+id, label or header. A record is a day, a kind and a number. The operator reads them with `GET /api/stats` or
+`vienkartine stats`; without the operator token the route answers 404, like an unknown path.
 
 Never sent to the server: the plaintext, the identity, and the URL fragment.
 
@@ -278,6 +285,7 @@ present `Origin` header must match the request origin.
 | `POST /api/items/:id/open` | `auth` | open limits; the auth token | `200` with `ciphertext`, once; `403` wrong token; `409` already used |
 | `POST /api/items/:id/reopen` | `auth` | open limits; the requester's auth token | `200` with state `open`; discards the answer |
 | `POST /api/items/:id/revoke` | `manageToken` (one-time link), `auth` (request), or `admin: true` | the matching token, or the operator token for `admin` | `200` with the new state (`revoked`, `removed`, or `read` if it was already read) |
+| `GET /api/stats?days=N` | none | the operator token | `200` with `retentionDays` and `days` (newest first, `N` from 1 to 400, default 30; each day has `send`, `request`, `fill`, `open`). `400` for a bad `N`. `404` for everyone else, as for an unknown path |
 
 `ttl` is an integer number of seconds from 3600 to 604800. Ids are 22 URL-safe characters; tokens are 43. Unknown or
 expired items return `404`; rate limiting returns `429`.
