@@ -209,7 +209,7 @@ const theme: Theme = {
   config: {
     origin: process.env.VK_ORIGIN ?? "https://secret.example.com",
     product: "Example secrets",
-    repoUrl: "https://github.com/areza-digital/vienkartine",
+    repoUrl: "https://github.com/areza-digital/one-time-secret-link",
     contactEmail: process.env.VK_CONTACT ?? "abuse@example.com",
   },
   stylesheet: join(import.meta.dir, "theme.css"),

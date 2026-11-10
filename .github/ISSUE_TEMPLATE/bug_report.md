@@ -7,7 +7,7 @@ assignees: ""
 ---
 
 **This is not a security report.** If it could be a vulnerability, stop and follow
-[SECURITY.md](https://github.com/areza-digital/vienkartine/security/policy) instead.
+[SECURITY.md](https://github.com/areza-digital/one-time-secret-link/security/policy) instead.
 
 **Never paste real secrets here:** no one-time links (the part after `#` is the key), no owner links, no operator
 tokens, no private keys, no contents of `~/.config/vienkartine`.

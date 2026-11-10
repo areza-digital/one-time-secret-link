@@ -6,7 +6,7 @@ labels: enhancement
 assignees: ""
 ---
 
-Please read the [contributing guide](https://github.com/areza-digital/vienkartine/blob/main/CONTRIBUTING.md) first. File
+Please read the [contributing guide](https://github.com/areza-digital/one-time-secret-link/blob/main/CONTRIBUTING.md) first. File
 uploads, accounts and anything that makes the server hold readable data are out of scope for now. The personal inbox is
 a design draft in `docs/design/personal-inbox.md`.
 
