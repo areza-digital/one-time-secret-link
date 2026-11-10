@@ -153,7 +153,8 @@ bun run dev                      # build + wrangler dev on http://127.0.0.1:8787
 
 ## CLI
 
-`cli/vienkartine.ts` runs on Bun. Run it with the flags below, or `chmod +x` it and run it directly (its shebang carries
+`cli/vienkartine.ts` runs on Bun (the [Claude Code plugin](#use-it-from-claude-code) ships it bundled, for Node 20.19 or
+later). Run it with the flags below, or `chmod +x` it and run it directly (its shebang carries
 the same flags):
 
 ```bash
@@ -207,6 +208,76 @@ Environment:
 
 Exit codes: 2 not filled yet, 3 not found or expired, 4 wrong key, 5 already used, 6 rate limited, 7 not saved as asked.
 
+## Use it from Claude Code
+
+A Claude Code plugin lets you hand an API key or a password to your coding assistant without it passing through the
+chat. It uses only the request flow described above. Install it from a shell:
+
+```bash
+claude plugin marketplace add areza-digital/one-time-secret-link
+claude plugin install vienkartine@areza-secret
+```
+
+You need Claude Code and Node.js 20.19 or later (the plugin's command is a bundle that runs on Node; no Bun needed).
+The plugin adds one skill, `request-secret` (`/vienkartine:request-secret`), and puts the `vienkartine` command on the
+`PATH` of the assistant's shell. It has no hooks, no servers and no background processes.
+
+**What happens when the assistant needs a credential**
+
+1. It runs `vienkartine request "..." --env NAME --to FILE`, which prints a request link. The file is outside your
+   project, by default `~/.config/vienkartine/secrets/NAME.env`.
+2. It gives you the link. If someone else holds the secret, you send them the link (it holds no secret, so it is safe
+   to email).
+3. You open the link in your own browser and type the secret into the page. It is encrypted there, to a key that
+   exists only on your machine.
+4. You tell the assistant. It runs `vienkartine pull <id>`, which writes the value to the file (mode 0600) and prints
+   only the variable name and its length.
+5. From then on the assistant uses the variable by name, in the shell command that needs it, for example by sourcing the
+   file in that same command.
+
+**The rules the skill gives the assistant.** It never asks for the secret in the chat. It never puts a secret on a
+command line, never prints it (no `cat`, `echo`, `env`, `set -x`, `curl -v`) and never reads the file back with a tool.
+It never reads `~/.config/vienkartine/`, where the private keys of pending requests and recovery files live. It uses
+only `request`, `pull`, `status`, `reject` and `revoke`, never `send`, `open` or `push`: those handle secrets the
+assistant should not hold, and `send --print` is the one command that prints a link that unlocks a secret. For
+passwords, PEM or JSON keys, and anything with a `$`, a quote or a line break, it asks for a raw file (`--raw`), because
+an env file cannot hold those.
+
+**What this protects, and what it does not.** Claude Code's documentation says: "Transcripts and history are not
+encrypted at rest." Anything that passes through a tool or the chat is written there, as plaintext. The point of the
+plugin is that the secret never passes through either: you type it into a web page, and the only things the assistant's
+tools print are the variable name and its length. It cannot promise more than that:
+
+- A skill is an instruction, not a lock. Nothing technical stops an assistant that ignores it, or one that was
+  manipulated by text it read, from running `cat` on the file. A command that echoes the variable, or an error message
+  that contains it, puts it into the transcript. Every program the assistant runs with the variable can read it, as you.
+- The file and the pending requests' private keys sit on your disk as plaintext (mode 0600), readable by anything that
+  runs as you. Deleting the file after use is on you.
+- The web page is served by the instance's operator. By default that is Areza Digital at https://secret.areza.digital;
+  whoever runs an instance controls the JavaScript it serves (see [Known limits](#security)). To use your own, set
+  `VIENKARTINE_URL`, either in your shell or for every session in Claude Code's settings:
+  `{ "env": { "VIENKARTINE_URL": "https://secret.example.com" } }` in `~/.claude/settings.json`. The skill tells the
+  assistant to say which host the link points to.
+- A Claude Code plugin runs code as you. This one has no hooks or servers, and its only code is `bin/vienkartine`,
+  the bundle of `cli/vienkartine.ts` with `age-encryption` (unminified, so it can be read). `bun run build:plugin`
+  rebuilds it byte for byte, and a test fails when it differs from the source.
+- It works in Claude Code only: claude.ai and Cowork do not install plugins that have a `bin/` folder.
+
+Worth adding yourself: deny the file tools the folders that must never be read, in your user settings (the rule syntax
+is Claude Code's, see its permissions page):
+
+```json
+{ "permissions": { "deny": ["Read(~/.config/vienkartine/requests/**)", "Read(~/.config/vienkartine/recovered/**)", "Read(~/.config/vienkartine/secrets/**)"] } }
+```
+
+Per the same documentation, such rules cover Claude's file tools and the file commands it recognises in Bash (`cat`,
+`head` and similar), not a program that opens the file itself. Whether the third rule also stops a shell from sourcing
+a secrets file in the same command was not checked; if it does, leave that rule out. Setting `cleanupPeriodDays` lower
+shortens how long transcripts are kept.
+
+How the plugin is built, how to try it without touching your own Claude Code setup, and what submitting it to
+Anthropic's directory would need: [docs/claude-code-plugin.md](docs/claude-code-plugin.md).
+
 ## Theming
 
 The look and the words of an instance come from a theme: a folder whose `theme.ts` default-exports a `Theme`. The
@@ -244,6 +315,7 @@ bun install
 bun run dev        # build + wrangler dev (needs .dev.vars)
 bun run check      # typecheck + unit tests + end-to-end tests
 bun run build      # writes dist/
+bun run build:plugin   # rebuilds the Claude Code plugin's command, plugins/vienkartine/bin/vienkartine
 bun run verify <url>
 bun run deploy     # build + tests + wrangler deploy (needs wrangler login)
 bun run scripts/shoot.ts <url> <dir> [paths]   # screenshots at phone and desktop widths, with an overflow check
@@ -260,7 +332,8 @@ bun run scripts/shoot.ts <url> <dir> [paths]   # screenshots at phone and deskto
 | `site/` | Static site generator: `copy.ts` (all Lithuanian and English text), `build.ts`, `base.css`, `theme.ts` (the Theme interface) |
 | `themes/default/` | The default theme |
 | `cli/` | The `vienkartine` CLI |
-| `scripts/` | `e2e.ts`, `verify.ts`, `shoot.ts` |
+| `plugins/vienkartine/`, `.claude-plugin/` | The Claude Code plugin (skill, bundled command) and the marketplace file that lists it |
+| `scripts/` | `e2e.ts`, `verify.ts`, `shoot.ts`, `build-plugin.ts` |
 | `test/` | Unit tests |
 | `docs/` | Threat model, self-hosting, theming, security reviews, design notes |
 
@@ -271,6 +344,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 - [Threat model](docs/threat-model.md)
 - [Self-hosting](docs/self-hosting.md)
 - [Theming](docs/theming.md)
+- [Claude Code plugin](docs/claude-code-plugin.md)
 - [Security reviews](docs/security-reviews.md) (with the original reports in `docs/reviews/`)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)

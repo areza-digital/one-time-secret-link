@@ -2,6 +2,24 @@
 
 All notable changes to this project are listed here. The project follows [semantic versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- A Claude Code plugin, published from this repository (`.claude-plugin/marketplace.json`, `plugins/vienkartine/`):
+  `claude plugin marketplace add areza-digital/one-time-secret-link`, then
+  `claude plugin install vienkartine@areza-secret`. One skill, `request-secret`, teaches the assistant the request flow
+  only: it creates a request link, you type the secret into the page in your own browser, `vienkartine pull` saves it to
+  a 0600 file, and the assistant sees only the name and the length. The skill forbids asking for the secret in the chat,
+  printing or reading it back, reading `~/.config/vienkartine/`, and the commands `send`, `open` and `push`. The plugin's
+  command is the CLI bundled into one file for Node 20.19 or later (`bun run build:plugin`; a test fails when the shipped
+  file differs from the source). See [Use it from Claude Code](README.md#use-it-from-claude-code) and
+  [docs/claude-code-plugin.md](docs/claude-code-plugin.md).
+
+### Changed
+
+- The CLI no longer uses Bun-only APIs (`Bun.sleep`, `Bun.stdin`), so the same code runs on Node. Behavior is unchanged.
+
 ## 0.3.2 (2026-10-22)
 
 ### Fixed

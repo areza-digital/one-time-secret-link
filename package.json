@@ -6,6 +6,7 @@
   "packageManager": "bun@1.4.2",
   "scripts": {
     "build": "bun run site/build.ts",
+    "build:plugin": "bun run scripts/build-plugin.ts",
     "dev": "wrangler dev",
     "test": "bun test",
     "e2e": "bun run build && bun run scripts/e2e.ts",

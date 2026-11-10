@@ -1,0 +1,15 @@
+{
+  "name": "areza-secret",
+  "description": "Claude Code plugins for Areza Secret (Vienkartine), a one-time secret link service",
+  "owner": {
+    "name": "Areza Digital",
+    "url": "https://areza.digital"
+  },
+  "plugins": [
+    {
+      "name": "vienkartine",
+      "source": "./plugins/vienkartine",
+      "description": "Get an API key or password from a person without it passing through the chat: the assistant creates a request link, the person types the secret into a web page, and it is saved to a private file the assistant never reads."
+    }
+  ]
+}
