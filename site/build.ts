@@ -349,7 +349,7 @@ function homeMain(ctx: Ctx, lang: Lang): string {
   const cards = c.uses.cards.map((card) => `<article class="card">${icon(card.icon, 48)}<h3>${card.title}</h3><p>${card.text}</p></article>`).join("");
   const security = c.security.items.map((item) => `<li>${icon(item.icon, 44)}<div><h3>${item.title}</h3><p>${item.text}</p></div></li>`).join("");
   const faq = c.faq.items
-    .map((item) => `<details class="faq-item"><summary><span>${item.q}</span>${theme.glyph("plus")}</summary><p>${esc(item.a)}</p></details>`)
+    .map((item) => `<details class="faq-item"><summary><span>${item.q}</span>${theme.glyph("plus")}</summary><p${item.id ? ` id="${item.id}"` : ""}>${esc(item.a)}</p></details>`)
     .join("");
   const cta = theme.cta?.[lang];
   const email = theme.config.contactEmail;

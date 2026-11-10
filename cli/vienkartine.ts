@@ -2,6 +2,7 @@
 // The flags matter: without them Bun would load .env and bunfig.toml from whatever folder this runs in, and a planted
 // file there could redirect the CLI and collect the operator token.
 // vienkartine: request, send, open and pull secrets through a Vienkartinė nuoroda instance without printing a value.
+// Runs on Bun, and, bundled by scripts/build-plugin.ts, on Node 22 or later: nothing here may need a Bun-only API.
 
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -47,6 +48,14 @@ interface SavedSend {
   base: string;
   createdAt: number;
   expiresAt: number;
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 class CliError extends Error {
@@ -123,7 +132,13 @@ function writePrivate(path: string, content: string): void {
 }
 
 function readJson<T>(path: string): T {
-  return JSON.parse(readFileSync(path, "utf8")) as T;
+  const text = readFileSync(path, "utf8");
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // On Node the parse error quotes part of the input, and a request file holds a private key: name the path only.
+    throw new CliError(`${path} is damaged (not valid JSON); delete it if you do not need that request any more`);
+  }
 }
 
 /**
@@ -181,7 +196,7 @@ async function api<T>(base: string, path: string, body?: unknown, extra: Record<
     // An HTML 429 comes from a Cloudflare zone rate-limit rule in front of the Worker, not from us: wait, retry once.
     const zoneLimit = response.status === 429 && !(response.headers.get("Content-Type") ?? "").includes("json");
     if (!zoneLimit || attempt > 0) break;
-    await Bun.sleep(Math.min(60, Number(response.headers.get("Retry-After")) || 15) * 1000);
+    await sleep(Math.min(60, Number(response.headers.get("Retry-After")) || 15) * 1000);
   }
   const data = (await response.json().catch(() => ({}))) as T;
   return { status: response.status, data };
@@ -340,7 +355,7 @@ async function send(args: ReturnType<typeof parseArgs>): Promise<void> {
   let value: string;
   if (fromEnv) value = readEnvValue(fromEnv);
   else if (file) value = readFileSync(expandPath(file), "utf8");
-  else if (!process.stdin.isTTY) value = await Bun.stdin.text();
+  else if (!process.stdin.isTTY) value = await readStdin();
   else throw new CliError("pipe the secret on stdin, or use --file FILE or --from-env FILE:NAME (never put it in argv)");
   if (!value.trim()) throw new CliError("the secret is empty");
   if ([...value].length > LIMITS.plaintextChars) throw new CliError(`the secret is over ${LIMITS.plaintextChars} characters`);
@@ -423,7 +438,7 @@ async function pull(args: ReturnType<typeof parseArgs>): Promise<void> {
     if (data.state !== "open") throw apiError(409, data);
     if (!args.flags.has("wait")) throw new CliError(`not filled yet; run again later or add --wait`, 2);
     if (Date.now() > deadline) throw new CliError("timed out waiting", 2);
-    await Bun.sleep(10_000);
+    await sleep(10_000);
   }
   const message = await decryptInto(saved.base, id, saved.identity, target);
   // The local key stays until the request expires, so a wrong answer can still be rejected (it can't decrypt anything now).
@@ -443,7 +458,7 @@ async function reject(args: ReturnType<typeof parseArgs>): Promise<void> {
 
 async function open(args: ReturnType<typeof parseArgs>): Promise<void> {
   // Prefer stdin (pbpaste | vienkartine open ...): a link in argv lands in shell history and `ps`.
-  const link = args.positional[0] ?? (!process.stdin.isTTY ? (await Bun.stdin.text()).trim() : "");
+  const link = args.positional[0] ?? (!process.stdin.isTTY ? (await readStdin()).trim() : "");
   let url: URL;
   try {
     url = new URL(link);

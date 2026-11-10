@@ -1,0 +1,15 @@
+{
+  "name": "vienkartine",
+  "displayName": "Vienkartine secret requests",
+  "version": "0.1.0",
+  "description": "Get an API key or password from a person without it passing through the chat: the assistant creates a request link, the person types the secret into a web page, and it is saved to a private file the assistant never reads.",
+  "author": {
+    "name": "Areza Digital",
+    "email": "hello@areza.digital",
+    "url": "https://areza.digital"
+  },
+  "homepage": "https://github.com/areza-digital/one-time-secret-link#use-it-from-claude-code",
+  "repository": "https://github.com/areza-digital/one-time-secret-link",
+  "license": "MIT",
+  "keywords": ["secrets", "api-key", "password", "credentials", "one-time-link", "age"]
+}

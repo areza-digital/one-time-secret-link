@@ -33,7 +33,8 @@ Where things are:
 | `site/` | Site generator: `copy.ts` has all page text in Lithuanian and English; `build.ts`; `base.css`; `theme.ts` |
 | `themes/default/` | The default theme |
 | `cli/` | The CLI |
-| `scripts/` | End-to-end test, `verify`, screenshots |
+| `plugins/vienkartine/` | The Claude Code plugin: skill and the CLI bundled into `bin/vienkartine` |
+| `scripts/` | End-to-end test, `verify`, screenshots, `build-plugin.ts` |
 | `test/` | Unit tests |
 | `docs/` | Documentation |
 
@@ -77,6 +78,13 @@ These come from what the project promises its users.
   error messages.
 - **Cryptography is age's.** Do not write cryptographic primitives. Changes to the wire protocol, the token derivation
   or the key types need an issue first, and the threat model updated in the same pull request.
+- **After any change to `cli/` or `src/shared/`, or to the version of a bundled dependency (`age-encryption` and what it
+  pulls in), run `bun run build:plugin` and commit `plugins/vienkartine/bin/vienkartine` and
+  `plugins/vienkartine/THIRD_PARTY_NOTICES`.** The plugin ships the CLI as one bundled file, and a test fails while it
+  differs from the source. The test compares bytes, so it needs the pinned Bun version (1.4.2); another Bun can write
+  different bytes. If the bundle or `plugins/vienkartine/skills/request-secret/SKILL.md` changed, also raise `version` in
+  `plugins/vienkartine/.claude-plugin/plugin.json` (a test tells you how). The CLI must also keep running on Node 22 or
+  later: no Bun-only APIs (`Bun.*`) in `cli/` or `src/shared/`.
 - **CLI changes must never print a secret value.** Files holding secrets are written with mode 0600; the save target is
   checked before a secret is burned; the operator token goes only to the URL it is pinned to. Keep the `bun` flags in
   the shebang (`--no-env-file --config=/dev/null`).
