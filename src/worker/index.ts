@@ -1,4 +1,5 @@
 // Routes: /api/* (JSON), the app pages /s|r|o/:id (+ /en/), and static assets with security headers.
+// /api/stats (operator token only) returns the daily totals that count() adds up after each successful action.
 
 import {
   AUTH_PATTERN,
@@ -15,10 +16,12 @@ import {
   sha256Hex,
   type PublicItem,
 } from "../shared/protocol";
+import { STATS_DAYS, type StatKind } from "../shared/stats";
 import type { SecretBox, StoredItem } from "./box";
 import { CSP } from "./csp";
 import { ipBucket } from "./ip";
 import type { RateLimiter } from "./limiter";
+import { STATS_OBJECT } from "./stats";
 
 export { SecretBox } from "./box";
 export { RateLimiter } from "./limiter";
@@ -55,10 +58,10 @@ const APP_PAGE = /^\/(?:(en)\/)?([sro])\/([^/]+)\/?$/;
 const SHELLS = { s: "open", r: "fill", o: "owner" } as const;
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     try {
-      if (url.pathname.startsWith("/api/")) return withHeaders(await api(request, env, url), "api");
+      if (url.pathname.startsWith("/api/")) return withHeaders(await api(request, env, ctx, url), "api");
       if (url.pathname === "/robots.txt") return withHeaders(robots(env, url), "static");
       if (/^\/(?:en\/)?_app\//.test(url.pathname)) return notFound(env, request, url.pathname.startsWith("/en/"));
 
@@ -81,8 +84,12 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
-async function api(request: Request, env: Env, url: URL): Promise<Response> {
+async function api(request: Request, env: Env, ctx: ExecutionContext, url: URL): Promise<Response> {
   const parts = url.pathname.split("/").filter(Boolean); // ["api", "items", id?, action?]
+  // Operator only. Everyone else gets the 404 of any unknown path, so the route can't even be found.
+  if (parts[1] === "stats" && parts.length === 2 && request.method === "GET" && (await isOperator(request, env))) {
+    return stats(env, url);
+  }
   if (parts[1] !== "items" || parts.length > 4) return json({ error: "not_found" }, 404);
   const id = parts[2];
   const action = parts[3];
@@ -105,12 +112,14 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
   const body = await readJson(request);
   if (!body) return json({ error: "bad_request" }, 400);
 
-  if (!id) return create(env, request, body, operator, now);
+  if (!id) return create(env, ctx, request, body, operator, now);
 
   if (action === "fill") {
     if (!operator && !(await allowed(env, request, "fill"))) return json({ error: "rate_limited" }, 429);
     if (!validCiphertext(body.ciphertext)) return json({ error: "bad_request" }, 400);
-    return result(await box(env, id).fill(body.ciphertext, now), (filledAt) => ({ filledAt }));
+    const outcome = await box(env, id).fill(body.ciphertext, now);
+    if (outcome.ok) count(env, ctx, "fill");
+    return result(outcome, (filledAt) => ({ filledAt }));
   }
 
   if (action === "reopen") {
@@ -122,7 +131,9 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
   if (action === "open") {
     if (!operator && !(await allowed(env, request, "open"))) return json({ error: "rate_limited" }, 429);
     if (typeof body.auth !== "string" || !AUTH_PATTERN.test(body.auth)) return json({ error: "bad_request" }, 400);
-    return result(await box(env, id).open(await sha256Hex(body.auth), now), (ciphertext) => ({ ciphertext }));
+    const outcome = await box(env, id).open(await sha256Hex(body.auth), now);
+    if (outcome.ok) count(env, ctx, "open");
+    return result(outcome, (ciphertext) => ({ ciphertext }));
   }
 
   if (action === "revoke") {
@@ -139,6 +150,7 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
 
 async function create(
   env: Env,
+  ctx: ExecutionContext,
   request: Request,
   body: Record<string, unknown>,
   operator: boolean,
@@ -186,7 +198,31 @@ async function create(
     readAt: null,
   };
   if (!(await box(env, id).create(item))) return json({ error: "server_error" }, 500);
+  count(env, ctx, kind);
   return json({ id, expiresAt: item.expiresAt, ...(manageToken ? { manageToken } : {}) }, 201);
+}
+
+/**
+ * Adds one to today's total for a kind of action. Nothing waits for it (waitUntil) and its errors stop here: the
+ * visitor is never slowed down by it and never sees it fail. Only the kind is passed on, nothing about who.
+ */
+function count(env: Env, ctx: ExecutionContext, kind: StatKind): void {
+  ctx.waitUntil(
+    (async () => {
+      try {
+        await env.LIMITS.get(env.LIMITS.idFromName(STATS_OBJECT)).tally(kind);
+      } catch (error) {
+        console.error("stats", error instanceof Error ? error.message : "unknown");
+      }
+    })(),
+  );
+}
+
+async function stats(env: Env, url: URL): Promise<Response> {
+  const days = Number(url.searchParams.get("days") ?? 30);
+  if (!Number.isInteger(days) || days < 1 || days > STATS_DAYS) return json({ error: "bad_request" }, 400);
+  const rows = await env.LIMITS.get(env.LIMITS.idFromName(STATS_OBJECT)).totals(days);
+  return json({ retentionDays: STATS_DAYS, days: rows });
 }
 
 function box(env: Env, id: string) {

@@ -160,7 +160,7 @@ const lt = (c: SiteConfig, who: string) => ({
       },
       {
         q: "Kokius duomenis apie mane saugote?",
-        a: "Šifruotą tekstą, sukūrimo ir galiojimo laiką bei tai, ar nuoroda atidaryta. Kad apribotume piktnaudžiavimą, veiksmus skaičiuojame pagal kasdien besikeičiančią IP adreso maišos reikšmę. Paties IP adreso nesaugome. Svetainė veikia Cloudflare infrastruktūroje; jos techninės atsarginės kopijos laikomos iki 30 dienų, bet jose yra tik šifruotas tekstas, kurio be rakto perskaityti neįmanoma.",
+        a: "Šifruotą tekstą, sukūrimo ir galiojimo laiką bei tai, ar nuoroda atidaryta. Kad apribotume piktnaudžiavimą, veiksmus skaičiuojame pagal kasdien besikeičiančią IP adreso maišos reikšmę. Paties IP adreso nesaugome. Taip pat kasdien skaičiuojame, kiek nuorodų sukuriama, užpildoma ir atidaroma: saugome tik bendrus skaičius, be jokio adreso ar kito identifikatoriaus. Svetainė veikia Cloudflare infrastruktūroje; jos techninės atsarginės kopijos laikomos iki 30 dienų, bet jose yra tik šifruotas tekstas, kurio be rakto perskaityti neįmanoma.",
       },
       {
         q: "Kiek tai kainuoja?",
@@ -447,7 +447,7 @@ const en = (c: SiteConfig, who: string): Copy => ({
       },
       {
         q: "What do you store about me?",
-        a: "The encrypted text, any request text (not encrypted), and when the link was created, expires and was opened. To limit abuse we count actions by a hash of your IP address that changes every day; we do not store the address itself. The site runs on Cloudflare, which keeps technical backups for up to 30 days. They hold no keys, so the secrets in them can't be read.",
+        a: "The encrypted text, any request text (not encrypted), and when the link was created, expires and was opened. To limit abuse we count actions by a hash of your IP address that changes every day; we do not store the address itself. We also count how many links are created, answered and opened each day, as plain totals without any address or other identifier. The site runs on Cloudflare, which keeps technical backups for up to 30 days. They hold no keys, so the secrets in them can't be read.",
       },
       {
         q: "How much does it cost?",
