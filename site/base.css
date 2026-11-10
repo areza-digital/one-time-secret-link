@@ -1076,6 +1076,11 @@ a {
   color: var(--text-muted);
 }
 
+/* A link to an answer scrolls so that its question stays visible below the sticky header. */
+.faq-item p[id] {
+  scroll-margin-top: calc(var(--header-height) + 120px);
+}
+
 /* CTA */
 .cta {
   display: grid;

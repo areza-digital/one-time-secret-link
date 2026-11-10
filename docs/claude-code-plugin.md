@@ -15,8 +15,9 @@ plugins/vienkartine/
   skills/request-secret/SKILL.md         the only skill: the request flow and what the assistant must never do
   bin/vienkartine                        the CLI as one bundled file (generated, committed, executable)
   bin/package.json                       {"type": "commonjs"}, see below
-scripts/build-plugin.ts                  builds bin/vienkartine from cli/vienkartine.ts
-test/plugin.test.ts                      manifests, skill, shipped file is current, a round trip on Node
+  THIRD_PARTY_NOTICES                    licences of the packages bundled into bin/vienkartine (generated, committed)
+scripts/build-plugin.ts                  builds bin/vienkartine and THIRD_PARTY_NOTICES from cli/vienkartine.ts
+test/plugin.test.ts                      manifests, skill, shipped files are current, version guard, a round trip on Node
 ```
 
 A marketplace is a git repository with `.claude-plugin/marketplace.json`; once that file is in the repository the plugin
@@ -25,7 +26,13 @@ and `claude plugin install vienkartine@areza-secret`. People who install get onl
 (`plugins/vienkartine`), so everything the plugin runs is inside it.
 
 The plugin has no hooks, MCP servers or monitors, so nothing runs unless the assistant runs `vienkartine`. Files in a
-plugin's `bin/` are on the `PATH` of the assistant's Bash tool while the plugin is enabled.
+plugin's `bin/` are on the `PATH` of the assistant's Bash tool while the plugin is enabled, but "plugin `bin/` directories
+come after the user's own `PATH` entries" (plugins components page, 2026-11-10), so a `vienkartine` the user installed
+earlier would run first. The skill therefore calls the bundled command by its full path, `"${CLAUDE_PLUGIN_ROOT}/bin/vienkartine"`.
+Claude Code replaces that variable in the Markdown of a plugin skill when it loads it (skills page, table of string
+substitutions: `${CLAUDE_PLUGIN_ROOT}` is "substituted only in plugin skills"), and the manifest reference adds that the
+variables are not in the environment of commands run through the Bash tool, which is why the reference has to sit in the
+skill text. A test fails if the skill names the command without that path.
 
 ## How the command is shipped
 
@@ -33,10 +40,10 @@ The CLI is TypeScript that runs on Bun and imports `age-encryption`. A user who 
 sources nor Bun, so the plugin ships one file: `bun run build:plugin` bundles `cli/vienkartine.ts` and everything it
 imports into `plugins/vienkartine/bin/vienkartine`.
 
-- **Runtime: Node.js 20.19 or later.** Node is on far more machines than Bun, and 20.19 is the oldest release that
-  `age-encryption`'s dependencies (`@noble/*`) support. The file has a `#!/usr/bin/env node` shebang. The CLI uses no
-  Bun-only API for this reason (`Bun.sleep` and `Bun.stdin` were replaced by portable code), and a test fails if the
-  bundle mentions `Bun`.
+- **Runtime: Node.js 22 or later.** Node is on far more machines than Bun. Node 20 is past end of life, so the plugin
+  does not claim it, and nothing in the bundle needs anything newer than 22. The file has a `#!/usr/bin/env node`
+  shebang. The CLI uses no Bun-only API for this reason (`Bun.sleep` and `Bun.stdin` were replaced by portable code), and
+  a test fails if the bundle mentions `Bun`.
 - **CommonJS, plus `bin/package.json`.** Node decides whether an extensionless file is CommonJS or ES module from the
   nearest `package.json` above it, and a user's home directory may hold one with `"type": "module"`. The bundle is
   CommonJS and `bin/package.json` pins that, so it runs wherever the plugin is installed.
@@ -51,6 +58,10 @@ imports into `plugins/vienkartine/bin/vienkartine`.
   settings (`{ "env": { "VIENKARTINE_URL": "https://secret.example.com" } }`).
 
 The file is about 295 KiB (at the time of writing), mostly `age-encryption` and the post-quantum primitives it uses.
+`THIRD_PARTY_NOTICES` carries the licence text of every package that went into the bundle (`age-encryption`,
+BSD-3-Clause; `@noble/ciphers`, `@noble/curves`, `@noble/hashes`, `@noble/post-quantum` and `@scure/base`, MIT, two of them
+twice because `@noble/post-quantum` brings its own copies). `scripts/build-plugin.ts` writes it from the build's list of
+input files and each package's own `LICENSE`, and fails if a bundled package has none.
 
 ## What the CLI can print
 
@@ -64,16 +75,22 @@ received but could not be saved as asked (`~/.config/vienkartine/recovered/<id>.
 
 ## Changing the plugin
 
-- After any change to `cli/` or `src/shared/`: `bun run build:plugin`, then commit `plugins/vienkartine/bin/vienkartine`.
-  `bun test` fails until you do.
-- `version` in `plugin.json` pins users to that version until it changes. Raise it whenever `bin/vienkartine` or the skill
-  changes, or `claude plugin update` tells users they are up to date. It is separate from the repository's version.
+- After any change to `cli/`, `src/shared/` or the version of a bundled dependency: `bun run build:plugin`, then commit
+  `plugins/vienkartine/bin/vienkartine` and `plugins/vienkartine/THIRD_PARTY_NOTICES`. `bun test` fails until you do. The
+  byte-for-byte check needs the Bun version pinned in `package.json` (1.4.2); another Bun can write different bytes.
+- `version` in `plugin.json` pins users to that version until it changes (loading page: a manifest that pins `version`
+  keeps every user on the cached copy until the string changes, however many commits are pushed). Raise it
+  whenever `bin/vienkartine` or the skill changes, or `claude plugin update` tells users they are up to date. It is
+  separate from the repository's version. `test/plugin.test.ts` enforces this: it hashes the two files and compares the
+  hash with the `RELEASED` pair in the test, and when they differ it fails and prints the pair to paste in after you have
+  raised the version. We kept the field rather than omitting it (which would make Claude Code use the commit SHA)
+  because the directory's checklist warns on a missing `version` and asks for it to be raised with every release.
 - Never rename the plugin: users install by `vienkartine@areza-secret`, and a renamed plugin is a different plugin.
 - Validate before you push (from a shell; `claude plugin validate` only reads files):
 
   ```bash
   claude plugin validate .                              # the marketplace
-  claude plugin validate ./plugins/vienkartine --strict # the plugin
+  claude plugin validate ./plugins/vienkartine --strict # the plugin (--strict also fails on a missing "version")
   claude plugin validate ./plugins/vienkartine/skills   # the skill's front matter
   ```
 
@@ -108,13 +125,19 @@ claude.com/docs/connectors/building/submission covers MCP servers, which this pl
 - **Review.** Every version gets automated validation and a security scan, and a person reviews a new listing before it goes
   live. A first submission that fails the scan is rejected. The listing is subject to Anthropic's Software Directory Terms
   and Policy.
-- **A privacy policy URL, which does not exist yet.** The directory reads `privacyPolicyUrl` (and `documentationUrl`,
-  `supportUrl`, `termsOfServiceUrl`, `icon`) from `plugin.json`, each an `https://` URL, the icon a file in the plugin.
-  The hosted service's FAQ answer is not a policy. The plugin pages only say that the directory reads those fields; the
-  connector submission page, for local connectors, asks for a policy that covers data collection, usage and storage,
-  third-party sharing, retention and contact information, and rejects a missing or incomplete one immediately. Treat that
-  list as the bar. Whoever writes it has to describe what the service keeps (ciphertext until read or expiry, the hashed
-  address used for rate limits, the daily totals) and say that the plugin itself collects nothing.
+- **The privacy policy URL.** The directory reads `privacyPolicyUrl` (and `documentationUrl`, `supportUrl`,
+  `termsOfServiceUrl`, `icon`) from `plugin.json`, each an `https://` URL, the icon a file in the plugin. The plugin's
+  statement is the FAQ answer "What does the Claude Code plugin send?" in `site/copy.ts`, in both languages, next to the
+  answer "What do you store about me?". Its paragraph has a fixed id, so it has a stable address on the hosted instance:
+  **https://secret.areza.digital/en/#plugin-privacy** (Lithuanian: https://secret.areza.digital/#papildinio-privatumas).
+  The browser opens the collapsed answer when it follows the link. The plugin pages only say that the directory reads
+  those fields; the connector submission page, for local connectors, asks for a policy that covers data collection, usage
+  and storage, third-party sharing, retention and contact information, and rejects a missing or incomplete one
+  immediately. The answer covers each of them: the plugin collects nothing; what the command sends and never sends; what
+  the server keeps, how long, and the daily totals; Cloudflare as the host and no one else; the contact address; the
+  default server and your own. Not done: the address is live only once a release that contains the answer is deployed to
+  secret.areza.digital, so `privacyPolicyUrl` is not in `plugin.json` yet. Add it at submission time, check that the link
+  opens the answer, and keep the answer true when the CLI or the server changes what is sent or stored.
 - **Held for a reviewer, by the checklist.** The directory holds a version for a person when a non-image file is over
   256 KiB (`bin/vienkartine` is about 295 KiB) and asks for readable source rather than compiled, packed or minified code.
   The bundle is unminified, generated from this repository by a documented, tested command, but it is still generated, so
@@ -125,5 +148,5 @@ claude.com/docs/connectors/building/submission covers MCP servers, which this pl
   decision, not made here.
 - **Already fine:** a README of at least 40 words in the plugin folder, `license` set to `MIT`, `name` and `author` that do
   not imitate Anthropic or another brand, a kebab-case name, `description` and `version` set, a skill with valid front
-  matter, no hooks, servers or package launchers. Run the portal's Validate before submitting; it checks more than
+  matter, no hooks, servers or package launchers, and the notices of the bundled packages in `THIRD_PARTY_NOTICES`. Run the portal's Validate before submitting; it checks more than
   `claude plugin validate` does.

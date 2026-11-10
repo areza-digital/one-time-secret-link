@@ -12,9 +12,13 @@ All notable changes to this project are listed here. The project follows [semant
   only: it creates a request link, you type the secret into the page in your own browser, `vienkartine pull` saves it to
   a 0600 file, and the assistant sees only the name and the length. The skill forbids asking for the secret in the chat,
   printing or reading it back, reading `~/.config/vienkartine/`, and the commands `send`, `open` and `push`. The plugin's
-  command is the CLI bundled into one file for Node 20.19 or later (`bun run build:plugin`; a test fails when the shipped
-  file differs from the source). See [Use it from Claude Code](README.md#use-it-from-claude-code) and
-  [docs/claude-code-plugin.md](docs/claude-code-plugin.md).
+  command is the CLI bundled into one file for Node 22 or later (`bun run build:plugin`; a test fails when the shipped
+  file differs from the source), with the licence notices of the packages it bundles in `THIRD_PARTY_NOTICES`. The skill
+  calls the bundled command by its full path, so a `vienkartine` the user installed earlier cannot shadow it. See
+  [Use it from Claude Code](README.md#use-it-from-claude-code) and [docs/claude-code-plugin.md](docs/claude-code-plugin.md).
+- A privacy statement for the plugin, as a new answer in the FAQ of both landing pages ("What does the Claude Code plugin
+  send?"), at `/en/#plugin-privacy` and `/#papildinio-privatumas`: what the plugin collects (nothing), what its command
+  sends, what it never sends, and the default and a self-hosted server.
 - Daily totals: per UTC day, how many one-time links and requests were created, requests filled and links opened. A
   counter is a day, a kind and a number; no address, hash, id or label is stored. They live in the existing
   `RateLimiter` Durable Object class (one object named `stats`), so no binding or migration changes; 400 days are kept,
@@ -27,6 +31,8 @@ All notable changes to this project are listed here. The project follows [semant
 ### Changed
 
 - The CLI no longer uses Bun-only APIs (`Bun.sleep`, `Bun.stdin`), so the same code runs on Node. Behavior is unchanged.
+- A damaged file in `VIENKARTINE_HOME/requests/` or `sent/` is now reported by its path only. Before, the JSON parse error
+  of the runtime could quote part of the file, which holds a private key.
 
 ## 0.3.2 (2026-10-22)
 

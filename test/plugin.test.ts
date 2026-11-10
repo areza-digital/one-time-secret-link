@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SHIPPED, buildPluginCli } from "../scripts/build-plugin";
+import { NOTICES, SHIPPED, buildPlugin } from "../scripts/build-plugin";
 import { encryptText } from "../src/shared/crypto";
 import { ID_PATTERN, randomToken } from "../src/shared/protocol";
 
@@ -40,6 +41,53 @@ describe("the manifests", () => {
   });
 });
 
+// `version` in plugin.json pins users: a changed command or skill reaches nobody until it is raised. This pair records
+// what the shipped command and skill hashed to at that version. When this test fails after you changed either one:
+// raise "version" in plugin.json, then put the new version and the new hash here (the failure message prints it).
+const RELEASED = { version: "0.1.0", sha256: "3ccd2e924355e46a1bb36cb103cc0eeaa8c9fcf8097acd38f89d526071b16fc3" };
+const releasedHash = () => createHash("sha256").update(readFileSync(SHIPPED)).update("\0").update(readFileSync(join(PLUGIN, "skills/request-secret/SKILL.md"))).digest("hex");
+
+describe("the privacy statement", () => {
+  const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
+
+  test("is an answer on both landing pages, at the addresses the plugin documents link to", async () => {
+    const out = mkdtempSync(join(tmpdir(), "vk-plugin-site-"));
+    // Hermetic: deploy scripts export VK_THEME and friends, which must not leak into the default build.
+    const env: Record<string, string | undefined> = { ...process.env };
+    for (const name of ["VK_THEME", "VK_WRANGLER_CONFIG", "VK_REPO", "VK_OUT"]) delete env[name];
+    const build = Bun.spawn(["bun", "run", join(ROOT, "site/build.ts")], { env: { ...env, VK_OUT: out }, stdout: "ignore", stderr: "pipe" });
+    expect(await build.exited).toBe(0);
+    const pages = { en: readFileSync(join(out, "en/index.html"), "utf8"), lt: readFileSync(join(out, "index.html"), "utf8") };
+    // The id is on the answer inside the collapsed <details>, so a browser opens it when it follows the link.
+    for (const [html, id] of [[pages.en, "plugin-privacy"], [pages.lt, "papildinio-privatumas"]]) {
+      expect(html).toMatch(new RegExp(`<details class="faq-item">(?:(?!</details>)[\\s\\S])*<p id="${id}">`));
+      const answer = new RegExp(`<p id="${id}">([^<]*)</p>`).exec(html)?.[1] ?? "";
+      for (const fact of ["secret.areza.digital", "VIENKARTINE_URL", "Cloudflare", "7 "]) expect(answer).toContain(fact);
+    }
+    expect(pages.en).toContain("the label you give it (not encrypted)");
+    expect(pages.en).toContain("the server never receives the secret in plain text");
+    expect(pages.lt).toContain("paties slapto teksto serveris niekada negauna");
+    // The documents that link to it use exactly those addresses, and none says the statement is still missing.
+    for (const path of ["README.md", "plugins/vienkartine/README.md", "docs/claude-code-plugin.md"]) {
+      expect(read(path)).toContain("https://secret.areza.digital/en/#plugin-privacy");
+      expect(read(path)).not.toMatch(/does not exist yet/i);
+    }
+  });
+});
+
+describe("the version", () => {
+  test("is raised whenever the bundled command or the skill changes", () => {
+    const version = json("plugins/vienkartine/.claude-plugin/plugin.json").version;
+    const hash = releasedHash();
+    if (version === RELEASED.version && hash === RELEASED.sha256) return;
+    throw new Error(
+      version === RELEASED.version
+        ? `bin/vienkartine or SKILL.md changed but plugin.json still says ${version}: raise it, then set RELEASED to { version: "<new>", sha256: "${hash}" } in this test`
+        : `plugin.json says ${version}, this test records ${RELEASED.version}: set RELEASED to { version: "${version}", sha256: "${hash}" }`,
+    );
+  });
+});
+
 describe("the skill", () => {
   const text = readFileSync(join(PLUGIN, "skills/request-secret/SKILL.md"), "utf8");
   const [, front, body] = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(text) ?? [];
@@ -56,17 +104,43 @@ describe("the skill", () => {
   });
 
   test("teaches the request flow and forbids every way of seeing or leaking the value", () => {
-    expect(body).toContain("vienkartine request");
-    expect(body).toContain("vienkartine pull");
+    expect(body).toContain('"${CLAUDE_PLUGIN_ROOT}/bin/vienkartine" request');
+    expect(body).toContain('"${CLAUDE_PLUGIN_ROOT}/bin/vienkartine" pull');
     const never = /## Never\n([\s\S]*?)\n## /.exec(body)?.[1] ?? "";
     expect(never).toContain("chat");
     for (const word of ["command line", "cat", "printenv", "Read", "~/.config/vienkartine", "send", "open", "push"]) expect(never).toContain(word);
+  });
+
+  test("calls the bundled command by its full path, never as a bare name that a user's own copy could shadow", () => {
+    // The plugin's bin/ is on the PATH after the user's own entries. The variable is replaced in plugin skills.
+    expect(body).not.toMatch(/(^|[\s`])vienkartine (request|pull|status|reject|revoke)\b/m);
+    expect(body).not.toMatch(/(?<!bin)\/vienkartine /); // every path to the command is the bundled one
+  });
+
+  test("no example puts the value on a command line, where other local users could read it", () => {
+    for (const source of [text, readFileSync(join(PLUGIN, "README.md"), "utf8"), readFileSync(join(ROOT, "README.md"), "utf8")]) {
+      expect(source).not.toMatch(/Bearer\s+"?\$/); // a header with the value in the command's own argument
+      expect(source).not.toMatch(/(?:-H|--header)\s+["'][^"']*\$\{?[A-Z_]*(?:KEY|TOKEN|SECRET|PASSWORD)/);
+    }
+    expect(body).toContain("@<(printf");
   });
 });
 
 describe("the shipped command", () => {
   test("is the CLI as built from the source now (run `bun run build:plugin` if this fails)", async () => {
-    expect(readFileSync(SHIPPED, "utf8")).toBe(await buildPluginCli());
+    expect(readFileSync(SHIPPED, "utf8")).toBe((await buildPlugin()).cli);
+  });
+
+  test("comes with the licence notice of every package bundled into it (run `bun run build:plugin` if this fails)", async () => {
+    const notices = readFileSync(NOTICES, "utf8");
+    expect(notices).toBe((await buildPlugin()).notices);
+    // Independent of the generator: each package the bundle says it contains has a block with its licence text.
+    const bundled = new Set([...readFileSync(SHIPPED, "utf8").matchAll(/^\/\/ node_modules\/((?:[^/\n]+\/node_modules\/)*(?:@[^/\n]+\/)?[^/\n]+)\//gm)].map((match) => match[1].split("/node_modules/").pop()!));
+    expect([...bundled].sort()).toEqual(["@noble/ciphers", "@noble/curves", "@noble/hashes", "@noble/post-quantum", "@scure/base", "age-encryption"]);
+    for (const name of bundled) expect(notices).toContain(`\n${name} `);
+    expect(notices).toContain("(BSD-3-Clause)");
+    expect(notices).toContain("Redistribution and use in source and binary forms"); // age-encryption
+    expect(notices).toContain("Permission is hereby granted, free of charge"); // the MIT packages
   });
 
   test("is executable, starts with a Node shebang, and runs as CommonJS wherever it is installed", () => {
@@ -86,8 +160,8 @@ describe("the shipped command", () => {
 
   // The remaining tests run the shipped file itself on Node, which is what a user who installed only the plugin has.
   const node = Bun.spawnSync(["node", "--version"]);
-  const [major, minor] = node.exitCode === 0 ? node.stdout.toString().trim().replace(/^v/, "").split(".").map(Number) : [0, 0];
-  const runnable = major > 20 || (major === 20 && minor >= 19);
+  const major = node.exitCode === 0 ? Number(node.stdout.toString().trim().replace(/^v/, "").split(".")[0]) : 0;
+  const runnable = major >= 22;
 
   /** A throwaway Vienkartinė nuoroda in memory, speaking just enough of the API for a request round trip. */
   function fakeInstance() {
@@ -133,6 +207,24 @@ describe("the shipped command", () => {
     const done = Bun.spawnSync([SHIPPED, "help"], { cwd: dir, env: { PATH: process.env.PATH ?? "", VIENKARTINE_HOME: join(dir, "home") } });
     expect(done.exitCode).toBe(0);
     expect(done.stdout.toString()).toStartWith("vienkartine: share secrets through https://secret.areza.digital without printing them");
+  });
+
+  test.skipIf(!runnable)("on Node: a damaged request file is reported by path only, never by content", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "vk-plugin-"));
+    const id = "A".repeat(22);
+    const fakeKey = "AGE-SECRET-KEY-PQ-1NOTAREALKEYBUTSHAPEDLIKEONE";
+    mkdirSync(join(dir, "home/requests"), { recursive: true });
+    const file = join(dir, `home/requests/${id}.json`);
+    // Starts with the key, so that Node's own parse error would quote it ("Unexpected token 'A', "AGE-SECRET"...").
+    writeFileSync(file, `${fakeKey}: the rest of a file that was cut off`);
+    const env = { VIENKARTINE_HOME: join(dir, "home") };
+    for (const args of [["pull", id], ["status"]]) {
+      const done = await run(args, env);
+      expect(done.code).toBe(1);
+      expect(done.err).toContain(file);
+      expect(done.out + done.err).not.toContain("AGE-SECRET");
+      expect(done.out + done.err).not.toContain("cut off");
+    }
   });
 
   test.skipIf(!runnable)("on Node: a request round trip saves the answer to a 0600 file and prints only its name and length", async () => {

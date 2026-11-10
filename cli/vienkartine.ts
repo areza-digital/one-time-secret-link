@@ -2,7 +2,7 @@
 // The flags matter: without them Bun would load .env and bunfig.toml from whatever folder this runs in, and a planted
 // file there could redirect the CLI and collect the operator token.
 // vienkartine: request, send, open and pull secrets through a Vienkartinė nuoroda instance without printing a value.
-// Runs on Bun, and, bundled by scripts/build-plugin.ts, on Node 20.19 or later: nothing here may need a Bun-only API.
+// Runs on Bun, and, bundled by scripts/build-plugin.ts, on Node 22 or later: nothing here may need a Bun-only API.
 
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -132,7 +132,13 @@ function writePrivate(path: string, content: string): void {
 }
 
 function readJson<T>(path: string): T {
-  return JSON.parse(readFileSync(path, "utf8")) as T;
+  const text = readFileSync(path, "utf8");
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // On Node the parse error quotes part of the input, and a request file holds a private key: name the path only.
+    throw new CliError(`${path} is damaged (not valid JSON); delete it if you do not need that request any more`);
+  }
 }
 
 /**

@@ -163,6 +163,11 @@ const lt = (c: SiteConfig, who: string) => ({
         a: "Šifruotą tekstą, sukūrimo ir galiojimo laiką bei tai, ar nuoroda atidaryta. Kad apribotume piktnaudžiavimą, veiksmus skaičiuojame pagal kasdien besikeičiančią IP adreso maišos reikšmę. Paties IP adreso nesaugome. Taip pat kasdien skaičiuojame, kiek nuorodų sukuriama, užpildoma ir atidaroma: saugome tik bendrus skaičius, be jokio adreso ar kito identifikatoriaus. Svetainė veikia Cloudflare infrastruktūroje; jos techninės atsarginės kopijos laikomos iki 30 dienų, bet jose yra tik šifruotas tekstas, kurio be rakto perskaityti neįmanoma.",
       },
       {
+        id: "papildinio-privatumas",
+        q: "Ką siunčia „Claude Code“ papildinys?",
+        a: `Papildinys apie jus nieko nerenka ir neturi analitikos. Jo komanda siunčia serveriui tik tai, ko reikia užklausai: pavadinimą, kurį jai suteikiate (jis nešifruojamas), jūsų kompiuteryje sukurtą viešąjį raktą ir iš atitinkamo privačiojo rakto išvestą prieigos kodą, kurio serveris saugo tik maišos reikšmę. Žmogus, kurio prašote duomenų, atsakymą užšifruoja savo naršyklėje, todėl paties slapto teksto serveris niekada negauna: jis iššifruojamas tik jūsų kompiuteryje, kuriame lieka ir privatusis raktas. Šifruotas atsakymas ištrinamas iš serverio, kai komanda jį atsiima, arba pasibaigus užklausos galiojimui; užklausa galioja ne ilgiau kaip 7 dienas. Kaip ir svetainėje, kad apribotume piktnaudžiavimą, veiksmus skaičiuojame pagal kasdien besikeičiančią IP adreso maišos reikšmę; paties adreso nesaugome. Serveris taip pat skaičiuoja, kiek nuorodų sukuriama, užpildoma ir atidaroma kiekvieną dieną: saugome tik bendrus skaičius, be jokio adreso ar kito identifikatoriaus. Pagal numatytuosius nustatymus komanda jungiasi prie secret.areza.digital; nustatę VIENKARTINE_URL, galite ją nukreipti į savo serverį. Paslauga veikia Cloudflare infrastruktūroje, o duomenų niekam kitam neperduodame; klausimus siųskite adresu ${c.contactEmail}.`,
+      },
+      {
         q: "Kiek tai kainuoja?",
         a: `Nemokamai.${c.publicSource === false ? "" : " Tai atviro kodo projektas su MIT licencija."}`,
       },
@@ -448,6 +453,11 @@ const en = (c: SiteConfig, who: string): Copy => ({
       {
         q: "What do you store about me?",
         a: "The encrypted text, any request text (not encrypted), and when the link was created, expires and was opened. To limit abuse we count actions by a hash of your IP address that changes every day; we do not store the address itself. We also count how many links are created, answered and opened each day, as plain totals without any address or other identifier. The site runs on Cloudflare, which keeps technical backups for up to 30 days. They hold no keys, so the secrets in them can't be read.",
+      },
+      {
+        id: "plugin-privacy",
+        q: "What does the Claude Code plugin send?",
+        a: `The plugin collects nothing about you and has no analytics. Its command talks only to the server, and sends only what a request needs: the label you give it (not encrypted), a public key made on your computer, and an access token derived from the matching private key, of which the server keeps only a hash. The person you ask encrypts their answer in their own browser, so the server never receives the secret in plain text; it is decrypted only on your computer, where the private key stays. The encrypted answer is deleted from the server when the command picks it up, or when the request expires (7 days at most). As on the website, we limit abuse with a hash of your IP address that changes every day, and we do not store the address itself. The server also counts how many links are created, answered and opened each day, as plain totals without any address or other identifier. By default the command talks to secret.areza.digital; set VIENKARTINE_URL to point it at an instance you host yourself. The service runs on Cloudflare and we share nothing with anyone else; questions go to ${c.contactEmail}.`,
       },
       {
         q: "How much does it cost?",
