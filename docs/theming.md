@@ -165,7 +165,9 @@ copy: (lang, copy) => ({
 ```
 
 Keep the text true. The core copy states what the code does (for example "no cookies", "deleted after the first read");
-if your deployment differs from that, for example because you turned on request logging, say so.
+if your deployment differs from that, for example because you turned on request logging, say so. The core answer to
+"What do you store about me?" also says that the service counts how many links are created, answered and opened each day, as
+totals ([daily totals](self-hosting.md#daily-totals)); if you replace that answer, keep that sentence.
 
 ## Tokens
 

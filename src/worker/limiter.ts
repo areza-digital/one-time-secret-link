@@ -1,6 +1,9 @@
-// Fixed-window counters. One object per hashed client IP, plus one "global" object for the daily cap.
+// Fixed-window counters. One object per hashed client IP, plus one "global" object for the hourly cap, plus one
+// "stats" object that holds the daily totals (stats.ts), so that no new binding or migration is needed.
 
 import { DurableObject } from "cloudflare:workers";
+import type { StatKind } from "../shared/stats";
+import { addCount, readTotals, type DayTotals } from "./stats";
 
 const CLEANUP_MS = 60 * 60 * 1000;
 
@@ -16,6 +19,15 @@ export class RateLimiter extends DurableObject {
     await this.ctx.storage.put(key, count + 1);
     if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(now + CLEANUP_MS);
     return true;
+  }
+
+  /** Daily totals, only ever called on the "stats" object. The kind is the whole input. */
+  async tally(kind: StatKind): Promise<void> {
+    await addCount(this.ctx.storage, kind, Date.now());
+  }
+
+  async totals(days: number): Promise<DayTotals[]> {
+    return readTotals(this.ctx.storage, days, Date.now());
   }
 
   async alarm(): Promise<void> {

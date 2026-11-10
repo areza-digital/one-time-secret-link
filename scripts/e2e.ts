@@ -197,6 +197,50 @@ try {
   const anonCli = cli(["request", "anon via cli"], undefined, anonymous);
   check("anonymous CLI is limited too", anonCli.code === 6, anonCli.err);
 
+  // 6b. Daily totals: each successful action raises its counter once, refused ones do not; only the operator reads them.
+  const operatorAuth = { Authorization: `Bearer ${OPERATOR_TOKEN}` };
+  const totalsOf = async () => {
+    const { data } = await call("/api/stats?days=2", undefined, operatorAuth); // two days, so a midnight in between does not matter
+    const rows = (data.days ?? []) as Record<string, number>[];
+    return JSON.stringify(["send", "request", "fill", "open"].map((kind) => rows.reduce((sum, row) => sum + row[kind], 0)));
+  };
+  const settled = async (expected?: string) => {
+    // The counters are added after the response has gone out: read until the number stops changing (or matches).
+    let last = await totalsOf();
+    for (let i = 0; i < 40; i++) {
+      await Bun.sleep(250);
+      const next = await totalsOf();
+      if (next === last || next === expected) return next;
+      last = next;
+    }
+    return last;
+  };
+  const [sendBefore, requestBefore, fillBefore, openBefore] = JSON.parse(await settled()) as number[];
+  const counted = await newIdentity();
+  const countedAuth = await authFromIdentity(counted.identity);
+  const countedSend = await call("/api/items", { kind: "send", ciphertext: await encryptText("totals", counted.recipient), ttl: 3600, auth: countedAuth }, operatorAuth);
+  const countedRequest = await call("/api/items", { kind: "request", recipient: counted.recipient, label: "totals check", ttl: 3600, auth: countedAuth }, operatorAuth);
+  const answer = { ciphertext: await encryptText("answer", counted.recipient) };
+  await call(`/api/items/${countedRequest.data.id}/fill`, answer);
+  const secondFill = await call(`/api/items/${countedRequest.data.id}/fill`, answer);
+  await call(`/api/items/${countedSend.data.id}/open`, { auth: countedAuth });
+  const secondCountedOpen = await call(`/api/items/${countedSend.data.id}/open`, { auth: countedAuth });
+  const wrongKeyOpen = await call(`/api/items/${countedRequest.data.id}/open`, { auth: "A".repeat(43) });
+  check("refused actions answer as before (409, 409, 403)", secondFill.status === 409 && secondCountedOpen.status === 409 && wrongKeyOpen.status === 403);
+  const expectedTotals = JSON.stringify([sendBefore + 1, requestBefore + 1, fillBefore + 1, openBefore + 1]);
+  check("daily totals count each successful action once and refused ones not", (await settled(expectedTotals)) === expectedTotals, `${expectedTotals} wanted`);
+  const stats = await call("/api/stats?days=1", undefined, operatorAuth);
+  const today = new Date().toISOString().slice(0, 10);
+  check("operator reads today's row and the retention", stats.status === 200 && stats.data.retentionDays === 400 && (stats.data.days as { day: string }[])[0].day === today, JSON.stringify(stats.data));
+  const strangerStats = await call("/api/stats?days=1");
+  const wrongTokenStats = await call("/api/stats?days=1", undefined, { Authorization: `Bearer ${"B".repeat(43)}` });
+  const unknownPath = await call("/api/nothing");
+  check("stats without the operator token answers like an unknown path (404)", [strangerStats, wrongTokenStats].every((r) => r.status === 404 && JSON.stringify(r.data) === JSON.stringify(unknownPath.data)));
+  const table = cli(["stats", "--days", "2"]);
+  check("cli stats prints the table with a total", table.code === 0 && table.out.includes(today) && /total \(2d\)/.test(table.out), table.err);
+  const tableWithoutToken = cli(["stats"], undefined, anonymous);
+  check("cli stats needs the operator token", tableWithoutToken.code === 1 && tableWithoutToken.err.includes("operator token"), tableWithoutToken.err);
+
   // 7. `bun run verify` accepts an honest instance built from this checkout (all page kinds).
   if (server) {
     const verify = Bun.spawnSync(["bun", "run", join(import.meta.dir, "verify.ts"), BASE]);

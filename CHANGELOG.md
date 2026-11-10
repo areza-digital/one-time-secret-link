@@ -15,6 +15,14 @@ All notable changes to this project are listed here. The project follows [semant
   command is the CLI bundled into one file for Node 20.19 or later (`bun run build:plugin`; a test fails when the shipped
   file differs from the source). See [Use it from Claude Code](README.md#use-it-from-claude-code) and
   [docs/claude-code-plugin.md](docs/claude-code-plugin.md).
+- Daily totals: per UTC day, how many one-time links and requests were created, requests filled and links opened. A
+  counter is a day, a kind and a number; no address, hash, id or label is stored. They live in the existing
+  `RateLimiter` Durable Object class (one object named `stats`), so no binding or migration changes; 400 days are kept,
+  and a failed count never fails the request. The operator reads them with `vienkartine stats [--days N]` or
+  `GET /api/stats` (operator token; everyone else gets the 404 of an unknown path).
+- The answer to "What do you store about me?" on both landing pages now says that the service counts how many links
+  are created, answered and opened each day, as totals without any address or identifier. A theme that overrides that
+  answer should keep the sentence.
 
 ### Changed
 

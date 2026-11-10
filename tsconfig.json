@@ -10,5 +10,5 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "include": ["src/web", "src/shared", "src/worker/csp.ts", "src/worker/ip.ts", "site", "themes", "cli", "scripts", "test"]
+  "include": ["src/web", "src/shared", "src/worker/csp.ts", "src/worker/ip.ts", "src/worker/stats.ts", "site", "themes", "cli", "scripts", "test"]
 }

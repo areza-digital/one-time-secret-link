@@ -94,6 +94,9 @@ In short:
   `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `nosniff`, `X-Frame-Options: DENY`.
 - Per-IP and global rate limits protect the service. IP addresses are hashed with a daily salt (IPv6 per /64) and
   never stored raw. Workers Logs are off in the shipped configuration.
+- The server keeps daily totals: per UTC day, how many one-time links and requests were created, requests filled and
+  links opened (400 days of history). A counter is a day, a kind and a number, with no address, hash, id or label. Only
+  the operator can read them (`vienkartine stats`), and the page says that they exist.
 - Anonymous request labels are filtered against spoofing and shown as a quoted message under a warning, never as the
   page headline.
 
@@ -174,6 +177,7 @@ cloned repository could point the CLI at another server or run code before it st
 | `status [id]` | Shows the server state of everything created from this machine. |
 | `revoke <id> [--admin]` | Deletes a request or one-time link now. `--admin` takes down anyone's link and needs the operator token. |
 | `push --from FILE --env NAME --ssh HOST --remote PATH` | Copies one variable into a remote env file over ssh. The value travels on stdin only. |
+| `stats [--days 30]` | Operator only. Prints the daily totals, newest day first: links created, requests created, requests filled, links opened (see [Daily totals](docs/self-hosting.md#daily-totals)). |
 
 In the examples below, `vienkartine` stands for the command above (for instance a shell alias).
 

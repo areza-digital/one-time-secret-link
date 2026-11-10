@@ -19,6 +19,7 @@ import {
   type Lang,
   type PublicItem,
 } from "../src/shared/protocol";
+import { STAT_KINDS, STATS_DAYS } from "../src/shared/stats";
 
 const HOME = process.env.VIENKARTINE_HOME ?? join(homedir(), ".config/vienkartine");
 // The live Areza instance. The default must always be a domain the project controls: secrets go wherever it points.
@@ -516,6 +517,27 @@ async function revoke(args: ReturnType<typeof parseArgs>): Promise<void> {
   console.log(data.state === "read" ? `${id}: it was already read before you revoked it; rotate that credential` : `${id}: ${word(data.state)}`);
 }
 
+/** The operator's daily totals: links and requests created, requests filled, links opened. Counts only, no identifiers. */
+async function stats(args: ReturnType<typeof parseArgs>): Promise<void> {
+  const days = Number(flag(args.flags, "days") ?? 30);
+  if (!Number.isInteger(days) || days < 1 || days > STATS_DAYS) throw new CliError(`--days must be a whole number from 1 to ${STATS_DAYS}`);
+  if (!operatorToken()) throw new CliError(`stats needs the operator token (${HOME}/operator.env)`);
+  const { status: code, data } = await api<{ days?: unknown }>(BASE, `/api/stats?days=${days}`);
+  if (code === 404) throw new CliError("the instance does not know the operator token, or it is older than the daily totals", 3);
+  if (code !== 200) throw apiError(code, data);
+  // Printed only if it is a date and plain counts: nothing else from the server reaches the terminal.
+  const rows = Array.isArray(data.days) ? (data.days as Record<string, unknown>[]) : [];
+  const counts = (row: Record<string, unknown>) => STAT_KINDS.map((kind) => row[kind]);
+  const valid = (row: Record<string, unknown>) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(String(row?.day)) && counts(row).every((n) => Number.isSafeInteger(n) && (n as number) >= 0);
+  if (!rows.length || !rows.every(valid)) throw new CliError(`unexpected answer from ${BASE}`);
+  const cell = (value: unknown) => String(value).padStart(8);
+  console.log(`day         ${["links", "requests", "filled", "opened"].map(cell).join("  ")}`);
+  for (const row of rows) console.log(`${row.day}  ${counts(row).map(cell).join("  ")}`);
+  const total = STAT_KINDS.map((kind) => rows.reduce((sum, row) => sum + (row[kind] as number), 0));
+  console.log(`total (${rows.length}d)  ${total.map(cell).join("  ")}`);
+}
+
 /** Puts NAME=value from a local env file into a remote env file over ssh. The value travels on stdin only. */
 async function push(args: ReturnType<typeof parseArgs>): Promise<void> {
   const from = flag(args.flags, "from");
@@ -568,6 +590,9 @@ const HELP = `vienkartine: share secrets through ${BASE} without printing them
       Delete a request or one-time link now. --admin takes down anyone's link (abuse reports; operator token).
   vienkartine push --from FILE --env NAME --ssh HOST --remote PATH
       Copy one variable into a remote env file over ssh (stdin only, one 0600 .vienkartine.bak kept).
+  vienkartine stats [--days 30]
+      Daily totals (operator token): links = one-time links created, requests = request links created,
+      filled = requests answered, opened = secrets handed out. Counts per UTC day, no identifiers; ${STATS_DAYS} days kept.
 
 Env: VIENKARTINE_URL (default https://secret.areza.digital), VIENKARTINE_HOME, VIENKARTINE_OPERATOR_TOKEN + VIENKARTINE_OPERATOR_URL.
 Exit codes: 2 not filled yet, 3 not found, 4 wrong key, 5 already used, 6 rate limited, 7 not saved as asked.`;
@@ -575,7 +600,7 @@ Exit codes: 2 not filled yet, 3 not found, 4 wrong key, 5 already used, 6 rate l
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
   const args = parseArgs(rest);
-  const commands: Record<string, (a: typeof args) => Promise<void>> = { request, send, pull, reject, open, status, revoke, push };
+  const commands: Record<string, (a: typeof args) => Promise<void>> = { request, send, pull, reject, open, status, revoke, push, stats };
   if (!command || command === "help" || command === "--help" || !commands[command]) {
     console.log(HELP);
     if (command && !["help", "--help"].includes(command)) process.exit(1);
